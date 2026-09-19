@@ -455,7 +455,12 @@ sequenceDiagram
     svg: { fontCache: "local" },
     startup: {
       typeset: false,
-      pageReady: () => MathJax.startup.defaultPageReady().then(() => window.__rerender && window.__rerender())
+      pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+        // tex2svg() doesn't inject MathJax's CSS; without it the screen-reader copy
+        // of each formula (mjx-assistive-mml) shows up as visible duplicate text.
+        document.head.appendChild(MathJax.svgStylesheet());
+        window.__rerender && window.__rerender();
+      })
     }
   };
 </script>
