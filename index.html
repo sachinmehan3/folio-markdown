@@ -286,6 +286,28 @@
     .doc { font-size: 16px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  /* ---------- Print / PDF ---------- */
+  @page { margin: 18mm 16mm; }
+  @media print {
+    :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
+      --surface: #ffffff; --ink: #111111; --muted: #555555; --rule: #d0d0d0;
+      --accent: #0e7466; --code-bg: #f5f5f5; --danger: #b3261e;
+      --hl-keyword: #8a3ffc; --hl-string: #1f7a3a; --hl-number: #b3541e; --hl-comment: #777777;
+      --hl-title: #0b5fb0; --hl-type: #0e7466; --hl-attr: #9a5b00; --hl-meta: #6b5b95;
+      color-scheme: light;
+    }
+    html, body { height: auto; display: block; background: #ffffff; }
+    .bar, .pane-editor, .pane-head, .codeblock-head button { display: none !important; }
+    main, main[data-view] { display: block; }
+    main .pane-preview { display: block !important; }
+    .scroll { overflow: visible; }
+    .doc { max-width: none; padding: 0; font-size: 11.5pt; }
+    .codeblock pre, .table-wrap, .diagram, .math-display { overflow: visible; }
+    .codeblock pre { white-space: pre-wrap; word-break: break-word; }
+    .codeblock, .diagram, .math-display, tr, img { break-inside: avoid; }
+    .doc h1, .doc h2, .doc h3, .doc h4 { break-after: avoid; }
+  }
 </style>
 
 <header class="bar">
@@ -299,6 +321,7 @@
     <label class="filebtn">Open .md<input type="file" id="file" accept=".md,.markdown,.txt,text/markdown,text/plain"></label>
     <button type="button" id="sample">Load sample</button>
     <button type="button" id="clear">Clear</button>
+    <button type="button" id="pdf">Download PDF</button>
   </div>
 </header>
 
@@ -483,7 +506,9 @@ sequenceDiagram
   marked.use({ gfm: true, breaks: false, renderer });
 
   /* ---------- Theme ---------- */
+  let printing = false;
   const isDark = () => {
+    if (printing) return false;
     const t = document.documentElement.getAttribute("data-theme");
     if (t) return t === "dark";
     return matchMedia("(prefers-color-scheme: dark)").matches;
@@ -596,6 +621,22 @@ sequenceDiagram
     const f = e.target.files[0];
     if (f) loadText(await f.text());
     e.target.value = "";
+  });
+
+  // PDF: re-render diagrams in light colours, then open the print dialog ("Save as PDF").
+  $("pdf").addEventListener("click", async () => {
+    clearTimeout(timer);
+    printing = true;
+    await render();
+    const prevTitle = document.title;
+    const h1 = out.querySelector("h1");
+    if (h1) document.title = h1.textContent.trim();
+    statusEl.textContent = "Choose “Save as PDF”";
+    try { window.print(); }
+    catch { statusEl.textContent = "Printing is blocked here — open index.html directly"; }
+    document.title = prevTitle;
+    printing = false;
+    render();
   });
 
   document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("dropping"); });
