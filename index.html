@@ -1,0 +1,621 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Folio Markdown Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
+<style>
+  :root {
+    --ground: #eef1f0;
+    --surface: #ffffff;
+    --editor: #f8faf9;
+    --ink: #17211f;
+    --muted: #5a6865;
+    --rule: #d5dcda;
+    --accent: #0e7466;
+    --accent-soft: #dcefeb;
+    --code-bg: #f2f5f4;
+    --focus: #0e7466;
+    --danger: #b3261e;
+    /* syntax */
+    --hl-keyword: #8a3ffc;
+    --hl-string: #1f7a3a;
+    --hl-number: #b3541e;
+    --hl-comment: #7c8a87;
+    --hl-title: #0b5fb0;
+    --hl-type: #0e7466;
+    --hl-attr: #9a5b00;
+    --hl-meta: #6b5b95;
+    --ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101615;
+      --surface: #161e1c;
+      --editor: #121917;
+      --ink: #e3ebe8;
+      --muted: #93a39f;
+      --rule: #2a3633;
+      --accent: #4cc3ad;
+      --accent-soft: #1b3531;
+      --code-bg: #0d1312;
+      --focus: #4cc3ad;
+      --danger: #f2b8b5;
+      --hl-keyword: #c49bff;
+      --hl-string: #7fd18f;
+      --hl-number: #f0a36b;
+      --hl-comment: #6f807c;
+      --hl-title: #7cb7ff;
+      --hl-type: #4cc3ad;
+      --hl-attr: #e6c07b;
+      --hl-meta: #b8a7e0;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #101615;
+    --surface: #161e1c;
+    --editor: #121917;
+    --ink: #e3ebe8;
+    --muted: #93a39f;
+    --rule: #2a3633;
+    --accent: #4cc3ad;
+    --accent-soft: #1b3531;
+    --code-bg: #0d1312;
+    --focus: #4cc3ad;
+    --danger: #f2b8b5;
+    --hl-keyword: #c49bff;
+    --hl-string: #7fd18f;
+    --hl-number: #f0a36b;
+    --hl-comment: #6f807c;
+    --hl-title: #7cb7ff;
+    --hl-type: #4cc3ad;
+    --hl-attr: #e6c07b;
+    --hl-meta: #b8a7e0;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 14px/1.5 var(--ui);
+    display: flex;
+    flex-direction: column;
+  }
+  [hidden] { display: none !important; }
+
+  /* ---------- Top bar ---------- */
+  .bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-right: auto;
+  }
+  .brand b {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .brand span {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button, .filebtn {
+    font: 500 13px/1 var(--ui);
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 7px 11px;
+    cursor: pointer;
+  }
+  button:hover, .filebtn:hover { border-color: var(--accent); color: var(--accent); }
+  button:focus-visible, .filebtn:focus-within, textarea:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; }
+  .seg button + button { border-left: 1px solid var(--rule); }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- Panes ---------- */
+  main {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  main[data-view="editor"] { grid-template-columns: 1fr; }
+  main[data-view="editor"] .pane-preview { display: none; }
+  main[data-view="preview"] { grid-template-columns: 1fr; }
+  main[data-view="preview"] .pane-editor { display: none; }
+
+  .pane { min-height: 0; display: flex; flex-direction: column; }
+  .pane-editor { border-right: 1px solid var(--rule); background: var(--editor); }
+  .pane-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+  }
+  textarea {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: 0;
+    padding: 16px;
+    background: var(--editor);
+    color: var(--ink);
+    font: 13.5px/1.65 var(--mono);
+    tab-size: 2;
+  }
+  textarea:focus-visible { outline-offset: -2px; }
+  .pane-preview { background: var(--surface); }
+  .scroll { flex: 1; overflow: auto; }
+  .dropping textarea { box-shadow: inset 0 0 0 2px var(--accent); }
+
+  /* ---------- Rendered document ---------- */
+  .doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 28px 16px 64px;
+    font: 17px/1.7 var(--serif);
+    overflow-wrap: break-word;
+  }
+  .doc > :first-child { margin-top: 0; }
+  .doc h1, .doc h2, .doc h3, .doc h4 {
+    font-family: var(--serif);
+    line-height: 1.25;
+    text-wrap: balance;
+    margin: 1.6em 0 0.5em;
+  }
+  .doc h1 { font-size: 2em; font-weight: 700; letter-spacing: -0.015em; }
+  .doc h2 { font-size: 1.45em; font-weight: 600; padding-bottom: 0.25em; border-bottom: 1px solid var(--rule); }
+  .doc h3 { font-size: 1.18em; font-weight: 600; }
+  .doc h4 { font-size: 1em; font-weight: 600; }
+  .doc a { color: var(--accent); text-underline-offset: 2px; }
+  .doc img { max-width: 100%; }
+  .doc hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
+  .doc blockquote {
+    margin: 1.2em 0;
+    padding: 0.1em 1em;
+    border-left: 3px solid var(--accent);
+    color: var(--muted);
+    font-style: italic;
+  }
+  .doc ul, .doc ol { padding-left: 1.4em; }
+  .doc li + li { margin-top: 0.2em; }
+  .doc li input[type="checkbox"] { margin-right: 0.4em; }
+  .doc :not(pre) > code {
+    font: 0.84em var(--mono);
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.1em 0.35em;
+  }
+  .table-wrap { overflow-x: auto; margin: 1.2em 0; }
+  .doc table { border-collapse: collapse; font: 14px/1.5 var(--ui); font-variant-numeric: tabular-nums; }
+  .doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 8px 14px; text-align: left; }
+  .doc th { font-weight: 600; border-bottom-width: 2px; }
+
+  .codeblock {
+    margin: 1.2em 0;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--code-bg);
+    overflow: hidden;
+  }
+  .codeblock-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 6px 4px 12px;
+    border-bottom: 1px solid var(--rule);
+    font: 500 11px/1 var(--ui);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .codeblock-head button { padding: 5px 8px; font-size: 11px; border-color: transparent; }
+  .codeblock pre { margin: 0; padding: 14px 16px; overflow-x: auto; }
+  .codeblock code { font: 13px/1.6 var(--mono); color: var(--ink); }
+
+  .diagram {
+    margin: 1.4em 0;
+    padding: 16px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .diagram svg { max-width: 100%; height: auto; }
+  .math-display { overflow-x: auto; overflow-y: hidden; margin: 1em 0; text-align: center; }
+  .math-raw { font-family: var(--mono); font-size: 0.85em; color: var(--muted); }
+  .render-error {
+    font: 12.5px/1.5 var(--mono);
+    color: var(--danger);
+    white-space: pre-wrap;
+    text-align: left;
+    margin: 0;
+  }
+
+  /* highlight.js tokens */
+  .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--hl-keyword); }
+  .hljs-string, .hljs-regexp, .hljs-addition, .hljs-selector-attr { color: var(--hl-string); }
+  .hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--hl-number); }
+  .hljs-comment, .hljs-quote { color: var(--hl-comment); font-style: italic; }
+  .hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: var(--hl-title); }
+  .hljs-type, .hljs-class .hljs-title, .hljs-title.class_ { color: var(--hl-type); }
+  .hljs-attr, .hljs-attribute, .hljs-variable, .hljs-template-variable, .hljs-params { color: var(--hl-attr); }
+  .hljs-meta, .hljs-tag { color: var(--hl-meta); }
+  .hljs-deletion { color: var(--danger); }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: 600; }
+
+  @media (max-width: 760px) {
+    main, main[data-view] { grid-template-columns: 1fr; }
+    main[data-view="split"] .pane-preview { display: none; }
+    .pane-editor { border-right: 0; }
+    .doc { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="bar">
+  <div class="brand"><b>Folio</b><span>Markdown · Code · Mermaid · TeX</span></div>
+  <div class="tools">
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="view-editor" data-view="editor" aria-pressed="false">Write</button>
+      <button type="button" id="view-split" data-view="split" aria-pressed="true">Split</button>
+      <button type="button" id="view-preview" data-view="preview" aria-pressed="false">Preview</button>
+    </div>
+    <label class="filebtn">Open .md<input type="file" id="file" accept=".md,.markdown,.txt,text/markdown,text/plain"></label>
+    <button type="button" id="sample">Load sample</button>
+    <button type="button" id="clear">Clear</button>
+  </div>
+</header>
+
+<main id="main" data-view="split">
+  <section class="pane pane-editor" aria-label="Markdown source">
+    <div class="pane-head"><span>Source</span><span id="stats">0 words</span></div>
+    <textarea id="src" spellcheck="false" placeholder="Paste or type Markdown here, or drop a .md file…"></textarea>
+  </section>
+  <section class="pane pane-preview" aria-label="Rendered preview">
+    <div class="pane-head"><span>Preview</span><span id="status">Ready</span></div>
+    <div class="scroll" id="scroll"><article class="doc" id="out"></article></div>
+  </section>
+</main>
+
+<script type="text/markdown" id="sample-md"># Orbital Mechanics Notes
+
+A quick reference that exercises **every renderer** in this app: GitHub-flavoured Markdown, syntax-highlighted code, Mermaid diagrams and TeX math.
+
+## 1. Kepler's third law
+
+For a body orbiting a much heavier one, the period $T$ and semi-major axis $a$ are related by
+
+$$
+T^2 = \frac{4\pi^2}{G M} a^3
+$$
+
+where $G \approx 6.674 \times 10^{-11}\ \mathrm{m^3\,kg^{-1}\,s^{-2}}$. Circular orbital speed is $v = \sqrt{GM/r}$.
+
+The vis-viva equation generalises this to any point on an ellipse:
+
+\[
+v^2 = GM\left(\frac{2}{r} - \frac{1}{a}\right)
+\]
+
+## 2. Computing a period
+
+```python
+import math
+
+G = 6.674e-11          # m^3 kg^-1 s^-2
+M_EARTH = 5.972e24     # kg
+
+def orbital_period(a_m: float) -> float:
+    """Return the orbital period in seconds for semi-major axis a (metres)."""
+    return 2 * math.pi * math.sqrt(a_m**3 / (G * M_EARTH))
+
+iss = orbital_period(6_771_000)
+print(f"ISS period: {iss / 60:.1f} min")   # ≈ 92.4 min
+```
+
+```ts
+type Orbit = { name: string; altitudeKm: number };
+const orbits: Orbit[] = [
+  { name: "LEO", altitudeKm: 400 },
+  { name: "GEO", altitudeKm: 35_786 },
+];
+```
+
+## 3. Mission flow
+
+```mermaid
+flowchart LR
+  A[Launch] --> B{Stage separation?}
+  B -- yes --> C[Parking orbit]
+  B -- no --> X[Abort]
+  C --> D[Hohmann transfer burn]
+  D --> E[Circularise at GEO]
+```
+
+```mermaid
+sequenceDiagram
+  participant G as Ground
+  participant S as Satellite
+  G->>S: Uplink burn plan
+  S-->>G: ACK + telemetry
+  S->>S: Execute Δv = 2.4 km/s
+```
+
+## 4. Common orbits
+
+| Orbit | Altitude (km) | Period |
+|-------|--------------:|-------:|
+| LEO   | 400           | 92 min |
+| MEO   | 20,200        | 12 h   |
+| GEO   | 35,786        | 23.93 h |
+
+> "The Earth is the cradle of humanity, but one cannot live in the cradle forever." — Tsiolkovsky
+
+- [x] Markdown
+- [x] Code highlighting
+- [x] Mermaid
+- [x] Math — note that plain prices like $5 and $10 stay as text.
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  window.MathJax = {
+    tex: { packages: { "[+]": ["ams"] } },
+    svg: { fontCache: "local" },
+    startup: {
+      typeset: false,
+      pageReady: () => MathJax.startup.defaultPageReady().then(() => window.__rerender && window.__rerender())
+    }
+  };
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.js"></script>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const src = $("src"), out = $("out"), statusEl = $("status"), stats = $("stats"), main = $("main");
+  const STORE_KEY = "folio-md-draft";
+  const VIEW_KEY = "folio-md-view";
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+  };
+
+  const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ---------- Math extraction (skips code spans and fences) ---------- */
+  const CODE_RE = /^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$|`[^`\n]+`/gm;
+  const MATH_RULES = [
+    [/\$\$([\s\S]+?)\$\$/g, true],
+    [/\\\[([\s\S]+?)\\\]/g, true],
+    [/\\\(([\s\S]+?)\\\)/g, false],
+    [/\$(?=\S)((?:\\\$|[^$\n])+?)(?<=\S)\$(?!\d)/g, false]
+  ];
+
+  function extractMath(text) {
+    const math = [];
+    const protect = (chunk) => {
+      for (const [re, display] of MATH_RULES) {
+        chunk = chunk.replace(re, (_, tex) => {
+          math.push({ tex: tex.trim(), display });
+          return `MATHPH${math.length - 1}ENDPH`;
+        });
+      }
+      return chunk;
+    };
+    let result = "", last = 0, m;
+    CODE_RE.lastIndex = 0;
+    while ((m = CODE_RE.exec(text))) {
+      result += protect(text.slice(last, m.index)) + m[0];
+      last = m.index + m[0].length;
+    }
+    return { text: result + protect(text.slice(last)), math };
+  }
+
+  /* ---------- Marked setup ---------- */
+  let mermaidQueue = [];
+  const renderer = {
+    code(code, info) {
+      const lang = (info || "").trim().split(/\s+/)[0].toLowerCase();
+      if (lang === "mermaid") {
+        mermaidQueue.push(code);
+        return `<div class="diagram" data-mermaid="${mermaidQueue.length - 1}"></div>`;
+      }
+      if (lang === "math" || lang === "latex" || lang === "tex") {
+        return `<div class="math-display" data-tex="${escapeHtml(code)}" data-display="1"></div>`;
+      }
+      let html;
+      if (window.hljs && lang && hljs.getLanguage(lang)) {
+        html = hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+      } else if (window.hljs && !lang) {
+        html = hljs.highlightAuto(code).value;
+      } else {
+        html = escapeHtml(code);
+      }
+      return `<div class="codeblock"><div class="codeblock-head"><span>${escapeHtml(lang || "text")}</span>` +
+        `<button type="button" class="copy">Copy</button></div>` +
+        `<pre><code class="hljs">${html}</code></pre></div>`;
+    },
+    table(header, body) {
+      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>`;
+    }
+  };
+  marked.use({ gfm: true, breaks: false, renderer });
+
+  /* ---------- Theme ---------- */
+  const isDark = () => {
+    const t = document.documentElement.getAttribute("data-theme");
+    if (t) return t === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+
+  /* ---------- Render ---------- */
+  let generation = 0;
+  async function render() {
+    const gen = ++generation;
+    const raw = src.value;
+    const words = (raw.match(/\S+/g) || []).length;
+    stats.textContent = `${words.toLocaleString()} words · ${raw.length.toLocaleString()} chars`;
+
+    mermaidQueue = [];
+    const { text, math } = extractMath(raw);
+    let html = marked.parse(text);
+    html = html.replace(/MATHPH(\d+)ENDPH/g, (_, i) => {
+      const { tex, display } = math[+i];
+      return display
+        ? `<div class="math-display" data-tex="${escapeHtml(tex)}" data-display="1"></div>`
+        : `<span class="math-inline" data-tex="${escapeHtml(tex)}"></span>`;
+    });
+    // Display math that ended up alone in a paragraph: unwrap it.
+    html = html.replace(/<p>\s*(<div class="math-display"[^>]*><\/div>)\s*<\/p>/g, "$1");
+
+    out.innerHTML = window.DOMPurify
+      ? DOMPurify.sanitize(html, { ADD_ATTR: ["data-tex", "data-display", "data-mermaid"] })
+      : html;
+
+    // Math
+    const mathReady = window.MathJax && typeof MathJax.tex2svg === "function";
+    out.querySelectorAll("[data-tex]").forEach((el) => {
+      const tex = el.getAttribute("data-tex");
+      const display = el.hasAttribute("data-display");
+      if (!mathReady) {
+        el.innerHTML = `<span class="math-raw">${escapeHtml(display ? `$$${tex}$$` : `$${tex}$`)}</span>`;
+        return;
+      }
+      try {
+        const node = MathJax.tex2svg(tex, { display });
+        const err = node.querySelector("[data-mjx-error]");
+        if (err) throw new Error(err.getAttribute("data-mjx-error"));
+        el.replaceChildren(node);
+      } catch (e) {
+        el.innerHTML = `<span class="render-error">TeX error: ${escapeHtml(e.message)}</span>`;
+      }
+    });
+
+    // Mermaid
+    const blocks = [...out.querySelectorAll("[data-mermaid]")];
+    if (blocks.length && window.mermaid) {
+      statusEl.textContent = "Drawing diagrams…";
+      mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: isDark() ? "dark" : "neutral", fontFamily: "IBM Plex Sans, system-ui, sans-serif" });
+      for (const el of blocks) {
+        const code = mermaidQueue[+el.getAttribute("data-mermaid")];
+        try {
+          const { svg } = await mermaid.render(`mmd-${gen}-${el.getAttribute("data-mermaid")}`, code);
+          if (gen !== generation) return;
+          el.innerHTML = svg;
+        } catch (e) {
+          if (gen !== generation) return;
+          el.innerHTML = `<p class="render-error">Mermaid error: ${escapeHtml(String(e.message || e))}</p>`;
+          document.querySelectorAll(`[id^="dmmd-${gen}"]`).forEach((n) => n.remove());
+        }
+      }
+    } else if (blocks.length) {
+      blocks.forEach((el) => { el.innerHTML = `<p class="render-error">Mermaid library failed to load.</p>`; });
+    }
+    if (gen === generation) statusEl.textContent = mathReady || !out.querySelector("[data-tex]") ? "Up to date" : "Loading math…";
+  }
+  window.__rerender = render;
+
+  let timer;
+  function schedule() {
+    clearTimeout(timer);
+    statusEl.textContent = "Typing…";
+    timer = setTimeout(() => { render(); store.set(STORE_KEY, src.value); }, 180);
+  }
+
+  /* ---------- Wiring ---------- */
+  src.addEventListener("input", schedule);
+  src.addEventListener("keydown", (e) => {
+    if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      src.setRangeText("  ", src.selectionStart, src.selectionEnd, "end");
+      schedule();
+    }
+  });
+
+  out.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".copy");
+    if (!btn) return;
+    const code = btn.closest(".codeblock").querySelector("code").innerText;
+    try { await navigator.clipboard.writeText(code); btn.textContent = "Copied"; }
+    catch { btn.textContent = "Copy blocked"; }
+    setTimeout(() => (btn.textContent = "Copy"), 1400);
+  });
+
+  function setView(v) {
+    main.dataset.view = v;
+    document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+    store.set(VIEW_KEY, v);
+  }
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+
+  function loadText(t) { src.value = t; render(); store.set(STORE_KEY, t); }
+  $("sample").addEventListener("click", () => loadText($("sample-md").textContent.trim() + "\n"));
+  $("clear").addEventListener("click", () => { loadText(""); src.focus(); });
+  $("file").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (f) loadText(await f.text());
+    e.target.value = "";
+  });
+
+  document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("dropping"); });
+  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) document.body.classList.remove("dropping"); });
+  document.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    document.body.classList.remove("dropping");
+    const f = e.dataTransfer.files[0];
+    if (f) loadText(await f.text());
+  });
+
+  // Re-render diagrams when the theme flips
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---------- Boot ---------- */
+  const savedView = store.get(VIEW_KEY);
+  if (savedView) setView(savedView);
+  const draft = store.get(STORE_KEY);
+  src.value = draft && draft.trim() ? draft : $("sample-md").textContent.trim() + "\n";
+  render();
+})();
+</script>
