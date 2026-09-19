@@ -834,9 +834,21 @@ sequenceDiagram
   }
   document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
 
-  function loadText(t) { src.value = t; clearHighlight(); render(); store.set(STORE_KEY, t); }
+  // Replace the editor's text as an edit (not by assigning .value), so Ctrl+Z can undo it.
+  function replaceAll(t) {
+    src.focus();
+    let ok = false;
+    if (document.activeElement === src) { // hidden in Preview view → can't focus, fall back
+      src.select();
+      ok = t ? document.execCommand("insertText", false, t) : (src.value === "" || document.execCommand("delete"));
+    }
+    if (!ok) src.value = t;
+    src.setSelectionRange(0, 0);
+    src.scrollTop = 0;
+  }
+  function loadText(t) { replaceAll(t); clearHighlight(); render(); store.set(STORE_KEY, t); }
   $("sample").addEventListener("click", () => loadText($("sample-md").textContent.trim() + "\n"));
-  $("clear").addEventListener("click", () => { loadText(""); src.focus(); });
+  $("clear").addEventListener("click", () => loadText(""));
   $("file").addEventListener("change", async (e) => {
     const f = e.target.files[0];
     if (f) loadText(await f.text());
