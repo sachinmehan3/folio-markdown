@@ -17,6 +17,7 @@
     --code-bg: #f2f5f4;
     --focus: #0e7466;
     --danger: #b3261e;
+    --mark: rgba(255, 196, 0, 0.42);
     /* syntax */
     --hl-keyword: #8a3ffc;
     --hl-string: #1f7a3a;
@@ -44,6 +45,7 @@
       --code-bg: #0d1312;
       --focus: #4cc3ad;
       --danger: #f2b8b5;
+      --mark: rgba(255, 196, 0, 0.3);
       --hl-keyword: #c49bff;
       --hl-string: #7fd18f;
       --hl-number: #f0a36b;
@@ -67,6 +69,7 @@
     --code-bg: #0d1312;
     --focus: #4cc3ad;
     --danger: #f2b8b5;
+    --mark: rgba(255, 196, 0, 0.3);
     --hl-keyword: #c49bff;
     --hl-string: #7fd18f;
     --hl-number: #f0a36b;
@@ -165,16 +168,39 @@
     border-bottom: 1px solid var(--rule);
     font-variant-numeric: tabular-nums;
   }
-  textarea {
-    flex: 1;
-    width: 100%;
-    resize: none;
+  .editor-wrap { flex: 1; min-height: 0; position: relative; background: var(--editor); }
+  textarea, .backdrop {
+    margin: 0;
     border: 0;
     padding: 16px;
-    background: var(--editor);
-    color: var(--ink);
     font: 13.5px/1.65 var(--mono);
+    letter-spacing: 0;
     tab-size: 2;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+  textarea {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    resize: none;
+    background: transparent;
+    color: var(--ink);
+  }
+  /* Mirror layer behind the textarea that paints the "found in source" highlight. */
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    color: transparent;
+    pointer-events: none;
+  }
+  .backdrop mark {
+    color: transparent;
+    background: var(--mark);
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px var(--mark);
   }
   textarea:focus-visible { outline-offset: -2px; }
   .pane-preview { background: var(--surface); }
@@ -189,7 +215,7 @@
     font: 17px/1.7 var(--serif);
     overflow-wrap: break-word;
   }
-  .doc > :first-child { margin-top: 0; }
+  .doc > .blk:first-child > :first-child { margin-top: 0; }
   .doc h1, .doc h2, .doc h3, .doc h4 {
     font-family: var(--serif);
     line-height: 1.25;
@@ -328,7 +354,10 @@
 <main id="main" data-view="split">
   <section class="pane pane-editor" aria-label="Markdown source">
     <div class="pane-head"><span>Source</span><span id="stats">0 words</span></div>
-    <textarea id="src" spellcheck="false" placeholder="Paste or type Markdown here, or drop a .md file…"></textarea>
+    <div class="editor-wrap">
+      <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+      <textarea id="src" spellcheck="false" placeholder="Paste or type Markdown here, or drop a .md file…"></textarea>
+    </div>
   </section>
   <section class="pane pane-preview" aria-label="Rendered preview">
     <div class="pane-head"><span>Preview</span><span id="status">Ready</span></div>
@@ -459,9 +488,10 @@ sequenceDiagram
     const math = [];
     const protect = (chunk) => {
       for (const [re, display] of MATH_RULES) {
-        chunk = chunk.replace(re, (_, tex) => {
+        chunk = chunk.replace(re, (whole, tex) => {
           math.push({ tex: tex.trim(), display });
-          return `MATHPH${math.length - 1}ENDPH`;
+          // Keep the line count unchanged so preview blocks still map to source lines.
+          return `MATHPH${math.length - 1}ENDPH` + "\n".repeat((whole.match(/\n/g) || []).length);
         });
       }
       return chunk;
@@ -473,6 +503,54 @@ sequenceDiagram
       last = m.index + m[0].length;
     }
     return { text: result + protect(text.slice(last)), math };
+  }
+
+  /* ---------- Table repair ----------
+     Pasted tables (often from chat tools) sometimes break a row across several
+     lines separated by blank lines:  "| **Cost** | Cheap" / "" / "| Expensive" / "" / "|".
+     Stitch those fragments back into one row. Returns the fixed text plus, for each
+     output line, the [first, last] source line it came from. */
+  const DELIM_RE = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+  const countPipes = (s) => (s.replace(/\\\|/g, "").replace(/`[^`]*`/g, "").match(/\|/g) || []).length;
+
+  function repairTables(text) {
+    const lines = text.split("\n");
+    const out = [], map = [];
+    let fence = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const f = line.match(/^\s*(`{3,}|~{3,})/);
+      if (fence) {
+        if (f && f[1][0] === fence[0] && f[1].length >= fence.length) fence = null;
+        out.push(line); map.push([i, i]);
+        continue;
+      }
+      if (f) { fence = f[1]; out.push(line); map.push([i, i]); continue; }
+
+      const next = lines[i + 1];
+      if (line.includes("|") && next !== undefined && next.includes("|") && DELIM_RE.test(next)) {
+        const expected = countPipes(line);
+        const closed = line.trim().endsWith("|");
+        out.push(line, next); map.push([i, i], [i + 1, i + 1]);
+        i += 2;
+        while (i < lines.length && lines[i].trim() && lines[i].includes("|")) {
+          let row = lines[i].trimEnd(), start = i, j = i;
+          while (closed && countPipes(row) < expected && !row.endsWith("|")) {
+            let k = j + 1;
+            while (k < lines.length && !lines[k].trim()) k++;
+            if (k >= lines.length || !lines[k].trim().startsWith("|") || countPipes(lines[k]) >= expected) break;
+            row += " " + lines[k].trim();
+            j = k;
+          }
+          out.push(row); map.push([start, j]);
+          i = j + 1;
+        }
+        i--;
+        continue;
+      }
+      out.push(line); map.push([i, i]);
+    }
+    return { text: out.join("\n"), map };
   }
 
   /* ---------- Marked setup ---------- */
@@ -523,8 +601,22 @@ sequenceDiagram
     stats.textContent = `${words.toLocaleString()} words · ${raw.length.toLocaleString()} chars`;
 
     mermaidQueue = [];
-    const { text, math } = extractMath(raw);
-    let html = marked.parse(text);
+    const repaired = repairTables(raw);
+    const { text, math } = extractMath(repaired.text);
+
+    // Render block by block, tagging each with the source lines it came from.
+    const tokens = marked.lexer(text);
+    let html = "", line = 0;
+    for (const tok of tokens) {
+      const nl = (tok.raw.match(/\n/g) || []).length;
+      if (tok.type !== "space") {
+        const last = Math.min(line + Math.max(0, tok.raw.endsWith("\n") ? nl - 1 : nl), repaired.map.length - 1);
+        const one = [tok];
+        one.links = tokens.links;
+        html += `<div class="blk" data-ls="${repaired.map[line][0]}" data-le="${repaired.map[last][1]}">${marked.parser(one)}</div>`;
+      }
+      line = Math.min(line + nl, repaired.map.length - 1);
+    }
     html = html.replace(/MATHPH(\d+)ENDPH/g, (_, i) => {
       const { tex, display } = math[+i];
       return display
@@ -589,6 +681,55 @@ sequenceDiagram
   }
 
   /* ---------- Wiring ---------- */
+  /* ---------- Preview selection → highlight in source ---------- */
+  const backdrop = $("backdrop");
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  function clearHighlight() { backdrop.textContent = ""; }
+
+  function highlightSource(s, e) {
+    const v = src.value;
+    backdrop.style.paddingRight = `${16 + src.offsetWidth - src.clientWidth}px`; // match textarea scrollbar
+    backdrop.innerHTML = escapeHtml(v.slice(0, s)) + "<mark>" + escapeHtml(v.slice(s, e)) + "</mark>" + escapeHtml(v.slice(e)) + "\n";
+    const mark = backdrop.querySelector("mark");
+    src.scrollTop = Math.max(0, mark.offsetTop - src.clientHeight / 3);
+    backdrop.scrollTop = src.scrollTop;
+  }
+
+  function locateSelection() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    if (!src.offsetParent) return; // editor hidden (Preview view or phone)
+    const r = sel.getRangeAt(0);
+    if (!out.contains(r.commonAncestorContainer)) return;
+
+    const blocks = out.querySelectorAll(".blk");
+    if (!blocks.length) return;
+    const blkOf = (n) => (n.nodeType === 1 ? n : n.parentElement)?.closest(".blk");
+    const a = blkOf(r.startContainer) || blocks[0];
+    const b = blkOf(r.endContainer) || blocks[blocks.length - 1];
+
+    const v = src.value;
+    const starts = [0];
+    for (let i = 0; i < v.length; i++) if (v[i] === "\n") starts.push(i + 1);
+    const from = starts[+a.dataset.ls] ?? 0;
+    const le = +b.dataset.le;
+    const to = le + 1 < starts.length ? starts[le + 1] - 1 : v.length;
+    const region = v.slice(from, to);
+
+    // Match the selected words in order, allowing Markdown syntax (** | ` [ ] etc.) between them.
+    const words = sel.toString().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    const attempts = [words, words.slice(0, 3), words.slice(-3)].filter((w) => w.length);
+    for (const w of attempts) {
+      const m = new RegExp(w.map(escRe).join("[^\\p{L}\\p{N}]*?"), "iu").exec(region);
+      if (m) return highlightSource(from + m.index, from + m.index + m[0].length);
+    }
+    highlightSource(from, from + region.trimEnd().length); // fall back to the whole block
+  }
+  out.addEventListener("mouseup", () => setTimeout(locateSelection, 0));
+  src.addEventListener("scroll", () => { backdrop.scrollTop = src.scrollTop; });
+
+  src.addEventListener("input", clearHighlight);
   src.addEventListener("input", schedule);
   src.addEventListener("keydown", (e) => {
     if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
@@ -614,7 +755,7 @@ sequenceDiagram
   }
   document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
 
-  function loadText(t) { src.value = t; render(); store.set(STORE_KEY, t); }
+  function loadText(t) { src.value = t; clearHighlight(); render(); store.set(STORE_KEY, t); }
   $("sample").addEventListener("click", () => loadText($("sample-md").textContent.trim() + "\n"));
   $("clear").addEventListener("click", () => { loadText(""); src.focus(); });
   $("file").addEventListener("change", async (e) => {
