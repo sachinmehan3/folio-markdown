@@ -278,13 +278,29 @@
 
   .diagram {
     margin: 1.4em 0;
-    padding: 16px;
     border: 1px solid var(--rule);
     border-radius: 8px;
-    overflow-x: auto;
-    text-align: center;
+    overflow: hidden;
   }
-  .diagram svg { max-width: 100%; height: auto; }
+  .diagram-tools {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--rule);
+    font: 500 12px/1 var(--ui);
+  }
+  .diagram-tools button { padding: 5px 9px; font-size: 12px; border-color: transparent; }
+  .diagram-tools button[aria-pressed="true"] { color: var(--accent); }
+  .zoom-val {
+    min-width: 5ch;
+    text-align: center;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .diagram-body { padding: 16px; overflow: auto; text-align: center; }
+  .diagram-body svg { height: auto; }
   .math-display { overflow-x: auto; overflow-y: hidden; margin: 1em 0; text-align: center; }
   .math-raw { font-family: var(--mono); font-size: 0.85em; color: var(--muted); }
   .render-error {
@@ -332,7 +348,9 @@
     main .pane-preview { display: block !important; }
     .scroll { overflow: visible; }
     .doc { max-width: none; padding: 0; font-size: 11.5pt; }
-    .codeblock pre, .table-wrap, .diagram, .math-display { overflow: visible; }
+    .codeblock pre, .table-wrap, .diagram, .diagram-body, .math-display { overflow: visible; }
+    .diagram-tools { display: none; }
+    .diagram-body svg { max-width: 100% !important; } /* never wider than the page */
     .codeblock pre { white-space: pre-wrap; word-break: break-word; }
     .codeblock, .diagram, .math-display, tr, img { break-inside: avoid; }
     .doc h1, .doc h2, .doc h3, .doc h4 { break-after: avoid; }
@@ -667,10 +685,17 @@ sequenceDiagram
         try {
           const { svg } = await mermaid.render(`mmd-${gen}-${el.getAttribute("data-mermaid")}`, code);
           if (gen !== generation) return;
-          el.innerHTML = svg;
+          el.innerHTML =
+            `<div class="diagram-tools" role="group" aria-label="Diagram size">` +
+            `<button type="button" data-zoom="out" aria-label="Smaller">−</button>` +
+            `<span class="zoom-val"></span>` +
+            `<button type="button" data-zoom="in" aria-label="Larger">+</button>` +
+            `<button type="button" data-zoom="fit">Fit</button></div>` +
+            `<div class="diagram-body">${svg}</div>`;
+          applyZoom(el);
         } catch (e) {
           if (gen !== generation) return;
-          el.innerHTML = `<p class="render-error">Mermaid error: ${escapeHtml(String(e.message || e))}</p>`;
+          el.innerHTML = `<div class="diagram-body"><p class="render-error">Mermaid error: ${escapeHtml(String(e.message || e))}</p></div>`;
           document.querySelectorAll(`[id^="dmmd-${gen}"]`).forEach((n) => n.remove());
         }
       }
@@ -745,6 +770,52 @@ sequenceDiagram
       src.setRangeText("  ", src.selectionStart, src.selectionEnd, "end");
       schedule();
     }
+  });
+
+  /* ---------- Diagram size ----------
+     Each diagram starts at "Fit" (its natural size, shrunk to the pane if needed).
+     − / + step in 25% increments of the natural size; the choice survives re-renders. */
+  const zooms = new Map(); // diagram index → scale, absent = fit
+  const ZOOM_STEP = 0.25, ZOOM_MIN = 0.25, ZOOM_MAX = 4;
+
+  function naturalWidth(svg) {
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    return (vb && vb.width) || svg.getBoundingClientRect().width || 1;
+  }
+
+  function applyZoom(el) {
+    const svg = el.querySelector(".diagram-body svg");
+    if (!svg) return;
+    const natural = naturalWidth(svg);
+    const z = zooms.get(el.dataset.mermaid);
+    if (z === undefined) {
+      svg.style.width = "";
+      svg.style.maxWidth = `min(100%, ${natural}px)`;
+    } else {
+      svg.style.maxWidth = "none";
+      svg.style.width = `${natural * z}px`;
+    }
+    const shown = svg.getBoundingClientRect().width;
+    el.querySelector(".zoom-val").textContent = shown ? `${Math.round((shown / natural) * 100)}%` : "Fit";
+    el.querySelector('[data-zoom="fit"]').setAttribute("aria-pressed", String(z === undefined));
+  }
+
+  out.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-zoom]");
+    if (!btn) return;
+    const el = btn.closest(".diagram");
+    const svg = el.querySelector(".diagram-body svg");
+    const key = el.dataset.mermaid;
+    if (btn.dataset.zoom === "fit") {
+      zooms.delete(key);
+    } else {
+      const cur = zooms.get(key) ?? svg.getBoundingClientRect().width / naturalWidth(svg);
+      const next = btn.dataset.zoom === "in"
+        ? Math.floor(cur / ZOOM_STEP + 1e-6) * ZOOM_STEP + ZOOM_STEP
+        : Math.ceil(cur / ZOOM_STEP - 1e-6) * ZOOM_STEP - ZOOM_STEP;
+      zooms.set(key, Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next)));
+    }
+    applyZoom(el);
   });
 
   out.addEventListener("click", async (e) => {

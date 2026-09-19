@@ -11,6 +11,7 @@ Open `index.html` in a browser. Type on the left, see the result on the right. N
 - Math: `$inline$`, `$$display$$`, `\(…\)`, `\[…\]`, or a `math` code block
 - Diagrams: a `mermaid` code block
 - Open or drag in a `.md` file; your draft is saved in the browser
+- Resize any diagram with its − / + / Fit controls
 - **Download PDF** opens the print dialog; choose "Save as PDF"
 
 Built with marked, highlight.js, Mermaid, MathJax and DOMPurify.
