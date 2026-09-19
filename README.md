@@ -2,6 +2,8 @@
 
 A single-file, live Markdown renderer with syntax-highlighted code, Mermaid diagrams and TeX math.
 
+**Live:** https://sachinmehan3.github.io/folio-markdown/
+
 ## Use
 
 Open `index.html` in a browser. Type on the left, see the result on the right. Needs an internet connection to load its libraries from a CDN.
