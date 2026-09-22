@@ -1,1248 +1,224 @@
+<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Folio Markdown Preview</title>
+<title>Folio · Document tools</title>
+<meta name="description" content="Small, focused tools for working with documents.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M2.5 1.5h10l5 5v12h-15z' fill='%231c1b19'/%3E%3Cpath d='M12.11 10.39V11.97V13.55H11.15L11.05 12.53H8.35V11.39H11.05L11.15 10.39ZM13.19 7.01H13.95V10.21H12.89L12.15 8L12.89 8.81H8.35V7.52H12.54ZM9.56 7.52V14.74L10.59 15.02V15.75H6.05V15.02L7.08 14.74V8.53L6.05 8.25V7.52Z' fill='%23fffefb'/%3E%3Cpath d='M12.5 1.5v5h5z' fill='%23b23a2e'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap">
 <style>
+  /* Same paper-and-ink palette as the tools. */
   :root {
-    --ground: #eef1f0;
-    --surface: #ffffff;
-    --editor: #f8faf9;
-    --ink: #17211f;
-    --muted: #5a6865;
-    --rule: #d5dcda;
-    --accent: #0e7466;
-    --accent-soft: #dcefeb;
-    --code-bg: #f2f5f4;
-    --focus: #0e7466;
-    --danger: #b3261e;
-    --mark: rgba(255, 196, 0, 0.42);
-    /* syntax */
-    --hl-keyword: #8a3ffc;
-    --hl-string: #1f7a3a;
-    --hl-number: #b3541e;
-    --hl-comment: #7c8a87;
-    --hl-title: #0b5fb0;
-    --hl-type: #0e7466;
-    --hl-attr: #9a5b00;
-    --hl-meta: #6b5b95;
-    --ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-    --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+    --ground: #f6f4ef;
+    --surface: #fffefb;
+    --ink: #1c1b19;
+    --muted: #6f6a61;
+    --faint: #9c968b;
+    --rule: #e3dfd6;
+    --rule-strong: #cbc5b8;
+    --accent: #b23a2e;
+    --accent-soft: rgba(178, 58, 46, 0.16);
+    --focus: #b23a2e;
+    --ui: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ground: #101615;
-      --surface: #161e1c;
-      --editor: #121917;
-      --ink: #e3ebe8;
-      --muted: #93a39f;
-      --rule: #2a3633;
-      --accent: #4cc3ad;
-      --accent-soft: #1b3531;
-      --code-bg: #0d1312;
-      --focus: #4cc3ad;
-      --danger: #f2b8b5;
-      --mark: rgba(255, 196, 0, 0.3);
-      --hl-keyword: #c49bff;
-      --hl-string: #7fd18f;
-      --hl-number: #f0a36b;
-      --hl-comment: #6f807c;
-      --hl-title: #7cb7ff;
-      --hl-type: #4cc3ad;
-      --hl-attr: #e6c07b;
-      --hl-meta: #b8a7e0;
+      --ground: #181715;
+      --surface: #1f1e1b;
+      --ink: #ebe7df;
+      --muted: #a39d92;
+      --faint: #7a756c;
+      --rule: #2f2d29;
+      --rule-strong: #47443e;
+      --accent: #e8796b;
+      --accent-soft: rgba(232, 121, 107, 0.2);
+      --focus: #e8796b;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --ground: #101615;
-    --surface: #161e1c;
-    --editor: #121917;
-    --ink: #e3ebe8;
-    --muted: #93a39f;
-    --rule: #2a3633;
-    --accent: #4cc3ad;
-    --accent-soft: #1b3531;
-    --code-bg: #0d1312;
-    --focus: #4cc3ad;
-    --danger: #f2b8b5;
-    --mark: rgba(255, 196, 0, 0.3);
-    --hl-keyword: #c49bff;
-    --hl-string: #7fd18f;
-    --hl-number: #f0a36b;
-    --hl-comment: #6f807c;
-    --hl-title: #7cb7ff;
-    --hl-type: #4cc3ad;
-    --hl-attr: #e6c07b;
-    --hl-meta: #b8a7e0;
+    --ground: #181715;
+    --surface: #1f1e1b;
+    --ink: #ebe7df;
+    --muted: #a39d92;
+    --faint: #7a756c;
+    --rule: #2f2d29;
+    --rule-strong: #47443e;
+    --accent: #e8796b;
+    --accent-soft: rgba(232, 121, 107, 0.2);
+    --focus: #e8796b;
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
   body {
     margin: 0;
-    background: var(--ground);
-    color: var(--ink);
-    font: 14px/1.5 var(--ui);
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-  }
-  [hidden] { display: none !important; }
-
-  /* ---------- Top bar ---------- */
-  .bar {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 16px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--rule);
-    background: var(--surface);
-  }
-  .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-right: auto;
-  }
-  .brand b {
-    font-family: var(--serif);
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-  .brand span {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-  }
-  .tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  button, .filebtn {
-    font: 500 13px/1 var(--ui);
+    background: var(--ground);
     color: var(--ink);
-    background: transparent;
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    padding: 7px 11px;
-    cursor: pointer;
+    font: 15px/1.55 var(--ui);
+    -webkit-font-smoothing: antialiased;
   }
-  button:hover, .filebtn:hover { border-color: var(--accent); color: var(--accent); }
-  button:focus-visible, .filebtn:focus-within, textarea:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
-  .seg button { border: 0; border-radius: 0; }
-  .seg button + button { border-left: 1px solid var(--rule); }
-  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  ::selection { background: var(--accent-soft); }
+  a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
-  /* ---------- Panes ---------- */
-  main {
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  main[data-view="editor"] { grid-template-columns: 1fr; }
-  main[data-view="editor"] .pane-preview { display: none; }
-  main[data-view="preview"] { grid-template-columns: 1fr; }
-  main[data-view="preview"] .pane-editor { display: none; }
+  .wrap { width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 24px; }
 
-  .pane { min-height: 0; display: flex; flex-direction: column; }
-  .pane-editor { border-right: 1px solid var(--rule); background: var(--editor); }
-  /* Hidden editor briefly laid out off-screen so it can take focus (see withEditor). */
-  main .pane-editor.ghost {
-    display: flex !important;
-    position: fixed;
-    left: -10000px;
-    top: 0;
-    width: 600px;
-    height: 400px;
-    opacity: 0;
-    pointer-events: none;
+  /* ---------- Masthead ---------- */
+  .masthead { padding: 72px 0 44px; }
+  .title { display: flex; align-items: center; gap: 0.16em; margin: 0; font: 500 clamp(44px, 7vw, 64px)/1 var(--serif); letter-spacing: -0.03em; }
+  .mark { width: 0.9em; height: 0.9em; flex: none; margin-left: -0.1em; transform: translateY(-0.05em); }
+  .sheet { fill: var(--ink); } .glyph { fill: var(--surface); } .flap { fill: var(--accent); }
+  .lede {
+    max-width: 34em;
+    margin: 16px 0 0;
+    font: 400 clamp(18px, 2.2vw, 21px)/1.45 var(--serif);
+    color: var(--muted);
+    text-wrap: pretty;
   }
-  .pane-head {
+
+  /* ---------- Tool grid ---------- */
+  .section-head {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 6px 16px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    border-bottom: 1px solid var(--rule);
-    font-variant-numeric: tabular-nums;
+    align-items: baseline;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--ink);
+    font-size: 13px;
   }
-  .editor-wrap { flex: 1; min-height: 0; position: relative; background: var(--editor); }
-  textarea, .backdrop {
-    margin: 0;
-    border: 0;
-    padding: 16px;
-    font: 13.5px/1.65 var(--mono);
-    /* JetBrains Mono merges ###, ->, != etc. into ligatures; show raw characters instead. */
-    font-variant-ligatures: none;
-    font-feature-settings: "liga" 0, "calt" 0;
-    letter-spacing: 0;
-    tab-size: 2;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-  }
-  textarea {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    resize: none;
-    background: transparent;
-    color: var(--ink);
-  }
-  /* Mirror layer behind the textarea that paints the "found in source" highlight. */
-  .backdrop {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    color: transparent;
-    pointer-events: none;
-  }
-  .backdrop mark {
-    color: transparent;
-    background: var(--mark);
-    border-radius: 2px;
-    box-shadow: 0 0 0 2px var(--mark);
-  }
-  textarea:focus-visible { outline-offset: -2px; }
-  .pane-preview { background: var(--surface); }
-  .scroll { flex: 1; overflow: auto; }
-  .dropping textarea { box-shadow: inset 0 0 0 2px var(--accent); }
+  .section-head h2 { margin: 0; font: 600 13px/1 var(--ui); }
+  .section-head span { color: var(--muted); font-variant-numeric: tabular-nums; }
 
-  /* ---------- Rendered document ---------- */
-  .doc {
-    max-width: 72ch;
-    margin: 0 auto;
-    padding: 28px 16px 64px;
-    font: 17px/1.7 var(--serif);
-    overflow-wrap: break-word;
+  .grid {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
   }
-  .doc > .blk:first-child > :first-child { margin-top: 0; }
-  .doc h1, .doc h2, .doc h3, .doc h4 {
-    font-family: var(--serif);
-    line-height: 1.25;
-    text-wrap: balance;
-    margin: 1.6em 0 0.5em;
-  }
-  .doc h1 { font-size: 2em; font-weight: 700; letter-spacing: -0.015em; }
-  .doc h2 { font-size: 1.45em; font-weight: 600; padding-bottom: 0.25em; border-bottom: 1px solid var(--rule); }
-  .doc h3 { font-size: 1.18em; font-weight: 600; }
-  .doc h4 { font-size: 1em; font-weight: 600; }
-  .doc a { color: var(--accent); text-underline-offset: 2px; }
-  .doc img { max-width: 100%; }
-  .doc hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
-  .doc blockquote {
-    margin: 1.2em 0;
-    padding: 0.1em 1em;
-    border-left: 3px solid var(--accent);
-    color: var(--muted);
-    font-style: italic;
-  }
-  .doc ul, .doc ol { padding-left: 1.4em; }
-  .doc li + li { margin-top: 0.2em; }
-  .doc li input[type="checkbox"] { margin-right: 0.4em; }
-  .doc :not(pre) > code {
-    font: 0.84em var(--mono);
-    background: var(--code-bg);
+  .tool {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 220px;
+    padding: 22px 22px 18px;
+    background: var(--surface);
     border: 1px solid var(--rule);
     border-radius: 4px;
-    padding: 0.1em 0.35em;
+    transition: border-color 140ms, box-shadow 140ms, transform 140ms;
   }
-  .table-wrap { overflow-x: auto; margin: 1.2em 0; }
-  .doc table { border-collapse: collapse; font: 14px/1.5 var(--ui); font-variant-numeric: tabular-nums; }
-  .doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 8px 14px; text-align: left; }
-  .doc th { font-weight: 600; border-bottom-width: 2px; }
-
-  .codeblock {
-    margin: 1.2em 0;
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    background: var(--code-bg);
-    overflow: hidden;
-  }
-  .codeblock-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 6px 4px 12px;
-    border-bottom: 1px solid var(--rule);
-    font: 500 11px/1 var(--ui);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+  .tool-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .tool-icon { width: 28px; height: 28px; color: var(--ink); }
+  .tool-icon .hl { stroke: var(--accent); }
+  .status {
+    font-size: 12px;
+    font-weight: 500;
     color: var(--muted);
-  }
-  .codeblock-head button { padding: 5px 8px; font-size: 11px; border-color: transparent; }
-  .codeblock pre { margin: 0; padding: 14px 16px; overflow-x: auto; }
-  .codeblock code { font: 13px/1.6 var(--mono); color: var(--ink); }
-
-  .diagram {
-    margin: 1.4em 0;
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .diagram-tools {
-    display: flex;
-    justify-content: flex-end;
+    display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 4px 6px;
-    border-bottom: 1px solid var(--rule);
-    font: 500 12px/1 var(--ui);
+    gap: 6px;
   }
-  .diagram-tools button { padding: 5px 9px; font-size: 12px; border-color: transparent; }
-  .diagram-tools button[aria-pressed="true"] { color: var(--accent); }
-  .zoom-val {
-    min-width: 5ch;
-    text-align: center;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
+  .status.live { color: var(--ink); }
+  .status.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #3f7d3a; }
+  .tool h3 { margin: 22px 0 6px; font: 600 21px/1.2 var(--serif); letter-spacing: -0.01em; }
+  .tool p { margin: 0; color: var(--muted); font-size: 14px; text-wrap: pretty; }
+  .tool-foot {
+    margin-top: auto;
+    padding-top: 18px;
+    font-size: 13px;
+    font-weight: 500;
   }
-  .diagram-tools .fs-open { margin-left: 6px; display: inline-flex; align-items: center; gap: 5px; }
-  .diagram-tools .fs-open svg { width: 13px; height: 13px; }
-  .diagram-body { padding: 16px; overflow: auto; text-align: center; }
+  .tool a { color: inherit; text-decoration: none; }
+  /* The whole card is the link target. */
+  .tool a::after { content: ""; position: absolute; inset: 0; border-radius: 4px; }
+  .tool a:focus-visible { outline: 0; }
+  .tool:has(a:focus-visible) { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .tool-foot .arrow { display: inline-block; transition: transform 140ms; }
+  .tool:has(a):hover { border-color: var(--rule-strong); box-shadow: 0 10px 28px -18px rgba(0, 0, 0, 0.35); }
+  .tool:has(a):hover .arrow { transform: translateX(3px); }
+  .tool:has(a):hover .tool-foot { color: var(--accent); }
 
-  /* ---------- Full-screen diagram viewer ---------- */
-  .fs {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: var(--surface);
-    color: var(--ink);
-  }
-  .fs[open] { display: flex; flex-direction: column; }
-  .fs::backdrop { background: rgba(0, 0, 0, 0.5); }
-  .fs-bar {
+  .tool.planned { background: transparent; border-style: dashed; border-color: var(--rule-strong); }
+  .tool.planned .tool-icon { color: var(--faint); }
+  .tool.planned .tool-foot { color: var(--faint); font-weight: 400; }
+
+  /* ---------- Footer ---------- */
+  footer { margin-top: auto; padding: 64px 0 32px; }
+  .foot {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 12px;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .fs-title {
-    margin-right: auto;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    justify-content: space-between;
+    gap: 8px 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
     color: var(--muted);
   }
-  .fs-hint { font-size: 12px; color: var(--muted); }
-  .fs-tools { display: flex; align-items: center; gap: 4px; }
-  .fs-stage {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-    overflow: hidden;
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .fs-stage.panning { cursor: grabbing; }
-  .fs-stage:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-  .fs-canvas { position: absolute; left: 0; top: 0; }
-  .fs-canvas svg { display: block; max-width: none !important; }
-  .diagram-body a[href], .fs-canvas a[href] { cursor: pointer; }
-  .diagram-body a[href]:hover .nodeLabel, .fs-canvas a[href]:hover .nodeLabel { text-decoration: underline; }
-  .diagram-body a[href]:focus-visible, .fs-canvas a[href]:focus-visible { outline: 2px solid var(--focus); }
-  @media (max-width: 760px) { .fs-hint { display: none; } }
-  .diagram-body svg { height: auto; }
-  /* Mermaid sizes labels a few px too tight for the web font; don't clip them. */
-  .diagram-body foreignObject, .fs-canvas foreignObject { overflow: visible; }
-  .math-display { overflow-x: auto; overflow-y: hidden; margin: 1em 0; text-align: center; }
-  .math-raw { font-family: var(--mono); font-size: 0.85em; color: var(--muted); }
-  .render-error {
-    font: 12.5px/1.5 var(--mono);
-    color: var(--danger);
-    white-space: pre-wrap;
-    text-align: left;
-    margin: 0;
-  }
+  footer a { color: inherit; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+  footer a:hover { color: var(--ink); }
 
-  /* highlight.js tokens */
-  .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--hl-keyword); }
-  .hljs-string, .hljs-regexp, .hljs-addition, .hljs-selector-attr { color: var(--hl-string); }
-  .hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--hl-number); }
-  .hljs-comment, .hljs-quote { color: var(--hl-comment); font-style: italic; }
-  .hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: var(--hl-title); }
-  .hljs-type, .hljs-class .hljs-title, .hljs-title.class_ { color: var(--hl-type); }
-  .hljs-attr, .hljs-attribute, .hljs-variable, .hljs-template-variable, .hljs-params { color: var(--hl-attr); }
-  .hljs-meta, .hljs-tag { color: var(--hl-meta); }
-  .hljs-deletion { color: var(--danger); }
-  .hljs-emphasis { font-style: italic; }
-  .hljs-strong { font-weight: 600; }
-
-  @media (max-width: 760px) {
-    main, main[data-view] { grid-template-columns: 1fr; }
-    main[data-view="split"] .pane-preview { display: none; }
-    .pane-editor { border-right: 0; }
-    .doc { font-size: 16px; }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 16px; }
+    .masthead { padding: 48px 0 32px; }
+    .tool { min-height: 0; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
-
-  /* ---------- Print / PDF ---------- */
-  @page { margin: 18mm 16mm; }
-  @media print {
-    :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
-      --surface: #ffffff; --ink: #111111; --muted: #555555; --rule: #d0d0d0;
-      --accent: #0e7466; --code-bg: #f5f5f5; --danger: #b3261e;
-      --hl-keyword: #8a3ffc; --hl-string: #1f7a3a; --hl-number: #b3541e; --hl-comment: #777777;
-      --hl-title: #0b5fb0; --hl-type: #0e7466; --hl-attr: #9a5b00; --hl-meta: #6b5b95;
-      color-scheme: light;
-    }
-    html, body { height: auto; display: block; background: #ffffff; }
-    .bar, .pane-editor, .pane-head, .codeblock-head button { display: none !important; }
-    main, main[data-view] { display: block; }
-    main .pane-preview { display: block !important; }
-    .scroll { overflow: visible; }
-    .doc { max-width: none; padding: 0; font-size: 11.5pt; }
-    .codeblock pre, .table-wrap, .diagram, .diagram-body, .math-display { overflow: visible; }
-    .diagram-tools, .fs { display: none !important; }
-    .diagram-body svg { max-width: 100% !important; } /* never wider than the page */
-    .codeblock pre { white-space: pre-wrap; word-break: break-word; }
-    .codeblock, .diagram, .math-display, tr, img { break-inside: avoid; }
-    .doc h1, .doc h2, .doc h3, .doc h4 { break-after: avoid; }
-  }
 </style>
 
-<header class="bar">
-  <div class="brand"><b>Folio</b><span>Markdown · Code · Mermaid · TeX</span></div>
-  <div class="tools">
-    <div class="seg" role="group" aria-label="View">
-      <button type="button" id="view-editor" data-view="editor" aria-pressed="false">Write</button>
-      <button type="button" id="view-split" data-view="split" aria-pressed="true">Split</button>
-      <button type="button" id="view-preview" data-view="preview" aria-pressed="false">Preview</button>
-    </div>
-    <label class="filebtn">Open .md<input type="file" id="file" accept=".md,.markdown,.txt,text/markdown,text/plain"></label>
-    <button type="button" id="sample">Load sample</button>
-    <button type="button" id="clear">Clear</button>
-    <button type="button" id="pdf">Download PDF</button>
+<header class="masthead">
+  <div class="wrap">
+    <h1 class="title">
+      <svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><path class="sheet" d="M2.5 1.5h10l5 5v12h-15z"/><path class="glyph" d="M12.11 10.39V11.97V13.55H11.15L11.05 12.53H8.35V11.39H11.05L11.15 10.39ZM13.19 7.01H13.95V10.21H12.89L12.15 8L12.89 8.81H8.35V7.52H12.54ZM9.56 7.52V14.74L10.59 15.02V15.75H6.05V15.02L7.08 14.74V8.53L6.05 8.25V7.52Z"/><path class="flap" d="M12.5 1.5v5h5z"/></svg>
+      Folio
+    </h1>
+    <p class="lede">Small, focused tools for working with documents. Free, no sign-up, and your files stay in your browser.</p>
   </div>
 </header>
 
-<main id="main" data-view="split">
-  <section class="pane pane-editor" aria-label="Markdown source">
-    <div class="pane-head"><span>Source</span><span id="stats">0 words</span></div>
-    <div class="editor-wrap">
-      <div class="backdrop" id="backdrop" aria-hidden="true"></div>
-      <textarea id="src" spellcheck="false" placeholder="Paste or type Markdown here, or drop a .md file…"></textarea>
-    </div>
-  </section>
-  <section class="pane pane-preview" aria-label="Rendered preview">
-    <div class="pane-head"><span>Preview</span><span id="status">Ready</span></div>
-    <div class="scroll" id="scroll"><article class="doc" id="out"></article></div>
-  </section>
+<main class="wrap">
+  <div class="section-head">
+    <h2>Tools</h2>
+    <span>1 available · 1 planned</span>
+  </div>
+
+  <ul class="grid">
+    <li class="tool">
+      <div class="tool-top">
+        <svg class="tool-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 3.5h11l5 5v16H6z"/><path d="M17 3.5v5h5"/>
+          <path class="hl" d="M10 19.5v-6l2.5 3 2.5-3v6M18.5 13.5v6M16.5 17.5l2 2 2-2"/>
+        </svg>
+        <span class="status live">Available</span>
+      </div>
+      <h3>Markdown to PDF</h3>
+      <p>Write Markdown with highlighted code, Mermaid diagrams and TeX math, see it rendered as you type, and export a clean PDF.</p>
+      <div class="tool-foot"><a href="markdown-to-pdf.html">Open tool <span class="arrow" aria-hidden="true">→</span></a></div>
+    </li>
+
+    <li class="tool planned">
+      <div class="tool-top">
+        <svg class="tool-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 3.5h11l5 5v16H6z"/><path d="M17 3.5v5h5"/>
+          <path d="M14 11.5v9M10.5 17l3.5 3.5 3.5-3.5"/>
+        </svg>
+        <span class="status">Planned</span>
+      </div>
+      <h3>PDF size reducer</h3>
+      <p>Make large PDFs smaller for email and uploads by recompressing images and dropping data the document doesn't need.</p>
+      <div class="tool-foot">Coming soon</div>
+    </li>
+  </ul>
 </main>
 
-<dialog class="fs" id="fs" aria-label="Diagram viewer">
-  <div class="fs-bar">
-    <span class="fs-title">Diagram</span>
-    <span class="fs-hint">Scroll or pinch to zoom · drag to pan · Esc to close</span>
-    <div class="fs-tools" role="group" aria-label="Zoom">
-      <button type="button" data-fs="out" aria-label="Zoom out">−</button>
-      <span class="zoom-val" id="fs-val">100%</span>
-      <button type="button" data-fs="in" aria-label="Zoom in">+</button>
-      <button type="button" data-fs="fit">Fit</button>
-      <button type="button" data-fs="one">100%</button>
-    </div>
-    <button type="button" data-fs="close">Close</button>
-  </div>
-  <div class="fs-stage" id="fs-stage" tabindex="0" aria-label="Diagram. Arrow keys pan, plus and minus zoom, 0 fits.">
-    <div class="fs-canvas" id="fs-canvas"></div>
-  </div>
-</dialog>
-
-<script type="text/markdown" id="sample-md"># Orbital Mechanics Notes
-
-A quick reference that exercises **every renderer** in this app: GitHub-flavoured Markdown, syntax-highlighted code, Mermaid diagrams and TeX math.
-
-Jump to [Kepler's third law](#1-keplers-third-law) or the [mission flow](#3-mission-flow), or read more on [Wikipedia](https://en.wikipedia.org/wiki/Kepler%27s_laws_of_planetary_motion).
-
-## 1. Kepler's third law
-
-For a body orbiting a much heavier one, the period $T$ and semi-major axis $a$ are related by
-
-$$
-T^2 = \frac{4\pi^2}{G M} a^3
-$$
-
-where $G \approx 6.674 \times 10^{-11}\ \mathrm{m^3\,kg^{-1}\,s^{-2}}$. Circular orbital speed is $v = \sqrt{GM/r}$.
-
-The vis-viva equation generalises this to any point on an ellipse:
-
-\[
-v^2 = GM\left(\frac{2}{r} - \frac{1}{a}\right)
-\]
-
-## 2. Computing a period
-
-```python
-import math
-
-G = 6.674e-11          # m^3 kg^-1 s^-2
-M_EARTH = 5.972e24     # kg
-
-def orbital_period(a_m: float) -> float:
-    """Return the orbital period in seconds for semi-major axis a (metres)."""
-    return 2 * math.pi * math.sqrt(a_m**3 / (G * M_EARTH))
-
-iss = orbital_period(6_771_000)
-print(f"ISS period: {iss / 60:.1f} min")   # ≈ 92.4 min
-```
-
-```ts
-type Orbit = { name: string; altitudeKm: number };
-const orbits: Orbit[] = [
-  { name: "LEO", altitudeKm: 400 },
-  { name: "GEO", altitudeKm: 35_786 },
-];
-```
-
-## 3. Mission flow
-
-```mermaid
-flowchart LR
-  A[Launch] --> B{Stage separation?}
-  B -- yes --> C[Parking orbit]
-  B -- no --> X[Abort]
-  C --> D[Hohmann transfer burn]
-  D --> E[Circularise at GEO]
-  click D href "https://en.wikipedia.org/wiki/Hohmann_transfer_orbit" "Read about Hohmann transfers"
-  click C href "#4-common-orbits" "See the orbit table"
-```
-
-```mermaid
-sequenceDiagram
-  participant G as Ground
-  participant S as Satellite
-  G->>S: Uplink burn plan
-  S-->>G: ACK + telemetry
-  S->>S: Execute Δv = 2.4 km/s
-```
-
-## 4. Common orbits
-
-| Orbit | Altitude (km) | Period |
-|-------|--------------:|-------:|
-| LEO   | 400           | 92 min |
-| MEO   | 20,200        | 12 h   |
-| GEO   | 35,786        | 23.93 h |
-
-> "The Earth is the cradle of humanity, but one cannot live in the cradle forever." — Tsiolkovsky
-
-- [x] Markdown
-- [x] Code highlighting
-- [x] Mermaid
-- [x] Math — note that plain prices like $5 and $10 stay as text.
-</script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
-<script>
-  window.MathJax = {
-    tex: { packages: { "[+]": ["ams"] } },
-    svg: { fontCache: "local" },
-    startup: {
-      typeset: false,
-      pageReady: () => MathJax.startup.defaultPageReady().then(() => {
-        // tex2svg() doesn't inject MathJax's CSS; without it the screen-reader copy
-        // of each formula (mjx-assistive-mml) shows up as visible duplicate text.
-        document.head.appendChild(MathJax.svgStylesheet());
-        window.__rerender && window.__rerender();
-      })
-    }
-  };
-</script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg-full.js"></script>
-
-<script>
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const src = $("src"), out = $("out"), statusEl = $("status"), stats = $("stats"), main = $("main");
-  const STORE_KEY = "folio-md-draft";
-  const VIEW_KEY = "folio-md-view";
-
-  const store = {
-    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
-  };
-
-  const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-  /* ---------- Math extraction (skips code spans and fences) ---------- */
-  const CODE_RE = /^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$|`[^`\n]+`/gm;
-  const MATH_RULES = [
-    [/\$\$([\s\S]+?)\$\$/g, true],
-    [/\\\[([\s\S]+?)\\\]/g, true],
-    [/\\\(([\s\S]+?)\\\)/g, false],
-    [/\$(?=\S)((?:\\\$|[^$\n])+?)(?<=\S)\$(?!\d)/g, false]
-  ];
-
-  function extractMath(text) {
-    const math = [];
-    const protect = (chunk) => {
-      for (const [re, display] of MATH_RULES) {
-        chunk = chunk.replace(re, (whole, tex) => {
-          math.push({ tex: tex.trim(), display });
-          // Keep the line count unchanged so preview blocks still map to source lines.
-          return `MATHPH${math.length - 1}ENDPH` + "\n".repeat((whole.match(/\n/g) || []).length);
-        });
-      }
-      return chunk;
-    };
-    let result = "", last = 0, m;
-    CODE_RE.lastIndex = 0;
-    while ((m = CODE_RE.exec(text))) {
-      result += protect(text.slice(last, m.index)) + m[0];
-      last = m.index + m[0].length;
-    }
-    return { text: result + protect(text.slice(last)), math };
-  }
-
-  /* ---------- Table repair ----------
-     Pasted tables (often from chat tools) sometimes break a row across several
-     lines separated by blank lines:  "| **Cost** | Cheap" / "" / "| Expensive" / "" / "|".
-     Stitch those fragments back into one row. Returns the fixed text plus, for each
-     output line, the [first, last] source line it came from. */
-  const DELIM_RE = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
-  const countPipes = (s) => (s.replace(/\\\|/g, "").replace(/`[^`]*`/g, "").match(/\|/g) || []).length;
-
-  function repairTables(text) {
-    const lines = text.split("\n");
-    const out = [], map = [];
-    let fence = null;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const f = line.match(/^\s*(`{3,}|~{3,})/);
-      if (fence) {
-        if (f && f[1][0] === fence[0] && f[1].length >= fence.length) fence = null;
-        out.push(line); map.push([i, i]);
-        continue;
-      }
-      if (f) { fence = f[1]; out.push(line); map.push([i, i]); continue; }
-
-      const next = lines[i + 1];
-      if (line.includes("|") && next !== undefined && next.includes("|") && DELIM_RE.test(next)) {
-        const expected = countPipes(line);
-        const closed = line.trim().endsWith("|");
-        out.push(line, next); map.push([i, i], [i + 1, i + 1]);
-        i += 2;
-        while (i < lines.length && lines[i].trim() && lines[i].includes("|")) {
-          let row = lines[i].trimEnd(), start = i, j = i;
-          while (closed && countPipes(row) < expected && !row.endsWith("|")) {
-            let k = j + 1;
-            while (k < lines.length && !lines[k].trim()) k++;
-            if (k >= lines.length || !lines[k].trim().startsWith("|") || countPipes(lines[k]) >= expected) break;
-            row += " " + lines[k].trim();
-            j = k;
-          }
-          out.push(row); map.push([start, j]);
-          i = j + 1;
-        }
-        i--;
-        continue;
-      }
-      out.push(line); map.push([i, i]);
-    }
-    return { text: out.join("\n"), map };
-  }
-
-  /* ---------- Marked setup ---------- */
-  let mermaidQueue = [];
-  const renderer = {
-    code(code, info) {
-      const lang = (info || "").trim().split(/\s+/)[0].toLowerCase();
-      if (lang === "mermaid") {
-        mermaidQueue.push(code);
-        return `<div class="diagram" data-mermaid="${mermaidQueue.length - 1}"></div>`;
-      }
-      if (lang === "math" || lang === "latex" || lang === "tex") {
-        return `<div class="math-display" data-tex="${escapeHtml(code)}" data-display="1"></div>`;
-      }
-      let html;
-      if (window.hljs && lang && hljs.getLanguage(lang)) {
-        html = hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
-      } else if (window.hljs && !lang) {
-        html = hljs.highlightAuto(code).value;
-      } else {
-        html = escapeHtml(code);
-      }
-      return `<div class="codeblock"><div class="codeblock-head"><span>${escapeHtml(lang || "text")}</span>` +
-        `<button type="button" class="copy">Copy</button></div>` +
-        `<pre><code class="hljs">${html}</code></pre></div>`;
-    },
-    table(header, body) {
-      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>`;
-    },
-    // GitHub-style anchors: "## 1. Kepler's law" → id "user-content-1-keplers-law", so
-    // [link](#1-keplers-law) works. The prefix keeps them clear of the app's own ids.
-    heading(text, level) {
-      return `<h${level} id="user-content-${slugify(text)}">${text}</h${level}>`;
-    }
-  };
-  marked.use({ gfm: true, breaks: false, renderer });
-
-  let slugCounts = new Map(); // reset on every render; repeated headings get -1, -2, …
-  function slugify(html) {
-    const tpl = document.createElement("template");
-    tpl.innerHTML = html;
-    const base = tpl.content.textContent.trim().toLowerCase()
-      .replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-");
-    const n = slugCounts.get(base) || 0;
-    slugCounts.set(base, n + 1);
-    return n ? `${base}-${n}` : base;
-  }
-
-  // Links to other pages open in a new tab so the draft isn't navigated away from.
-  if (window.DOMPurify) {
-    DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-      const href = node.tagName === "A" && node.getAttribute("href");
-      if (href && !href.startsWith("#")) {
-        node.setAttribute("target", "_blank");
-        node.setAttribute("rel", "noopener noreferrer");
-      }
-    });
-  }
-
-  /* ---------- Theme ---------- */
-  let printing = false;
-  const isDark = () => {
-    if (printing) return false;
-    const t = document.documentElement.getAttribute("data-theme");
-    if (t) return t === "dark";
-    return matchMedia("(prefers-color-scheme: dark)").matches;
-  };
-
-  /* ---------- Render ---------- */
-  let generation = 0;
-  async function render() {
-    const gen = ++generation;
-    const raw = src.value;
-    const words = (raw.match(/\S+/g) || []).length;
-    stats.textContent = `${words.toLocaleString()} words · ${raw.length.toLocaleString()} chars`;
-
-    mermaidQueue = [];
-    slugCounts = new Map();
-    const repaired = repairTables(raw);
-    const { text, math } = extractMath(repaired.text);
-
-    // Render block by block, tagging each with the source lines it came from.
-    const tokens = marked.lexer(text);
-    let html = "", line = 0;
-    for (const tok of tokens) {
-      const nl = (tok.raw.match(/\n/g) || []).length;
-      if (tok.type !== "space") {
-        const last = Math.min(line + Math.max(0, tok.raw.endsWith("\n") ? nl - 1 : nl), repaired.map.length - 1);
-        const one = [tok];
-        one.links = tokens.links;
-        html += `<div class="blk" data-ls="${repaired.map[line][0]}" data-le="${repaired.map[last][1]}">${marked.parser(one)}</div>`;
-      }
-      line = Math.min(line + nl, repaired.map.length - 1);
-    }
-    html = html.replace(/MATHPH(\d+)ENDPH/g, (_, i) => {
-      const { tex, display } = math[+i];
-      return display
-        ? `<div class="math-display" data-tex="${escapeHtml(tex)}" data-display="1"></div>`
-        : `<span class="math-inline" data-tex="${escapeHtml(tex)}"></span>`;
-    });
-    // Display math that ended up alone in a paragraph: unwrap it.
-    html = html.replace(/<p>\s*(<div class="math-display"[^>]*><\/div>)\s*<\/p>/g, "$1");
-
-    out.innerHTML = window.DOMPurify
-      ? DOMPurify.sanitize(html, { ADD_ATTR: ["data-tex", "data-display", "data-mermaid"] })
-      : html;
-
-    // Math
-    const mathReady = window.MathJax && typeof MathJax.tex2svg === "function";
-    out.querySelectorAll("[data-tex]").forEach((el) => {
-      const tex = el.getAttribute("data-tex");
-      const display = el.hasAttribute("data-display");
-      if (!mathReady) {
-        el.innerHTML = `<span class="math-raw">${escapeHtml(display ? `$$${tex}$$` : `$${tex}$`)}</span>`;
-        return;
-      }
-      try {
-        const node = MathJax.tex2svg(tex, { display });
-        const err = node.querySelector("[data-mjx-error]");
-        if (err) throw new Error(err.getAttribute("data-mjx-error"));
-        el.replaceChildren(node);
-      } catch (e) {
-        el.innerHTML = `<span class="render-error">TeX error: ${escapeHtml(e.message)}</span>`;
-      }
-    });
-
-    // Mermaid
-    const blocks = [...out.querySelectorAll("[data-mermaid]")];
-    if (blocks.length && window.mermaid) {
-      statusEl.textContent = "Drawing diagrams…";
-      mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: isDark() ? "dark" : "neutral", fontFamily: "IBM Plex Sans, system-ui, sans-serif" });
-      for (const el of blocks) {
-        const code = mermaidQueue[+el.getAttribute("data-mermaid")];
-        try {
-          const { svg } = await mermaid.render(`mmd-${gen}-${el.getAttribute("data-mermaid")}`, code);
-          if (gen !== generation) return;
-          el.innerHTML =
-            `<div class="diagram-tools" role="group" aria-label="Diagram controls">` +
-            `<button type="button" data-zoom="out" aria-label="Smaller">−</button>` +
-            `<span class="zoom-val"></span>` +
-            `<button type="button" data-zoom="in" aria-label="Larger">+</button>` +
-            `<button type="button" data-zoom="fit">Fit</button>` +
-            `<button type="button" class="fs-open" title="Open in full screen">${EXPAND_ICON}Full screen</button></div>` +
-            `<div class="diagram-body">${svg}</div>`;
-          linkDiagram(el);
-          applyZoom(el);
-          if (fs.open && viewer.key === el.dataset.mermaid) refreshViewer(el);
-        } catch (e) {
-          if (gen !== generation) return;
-          el.innerHTML = `<div class="diagram-body"><p class="render-error">Mermaid error: ${escapeHtml(String(e.message || e))}</p></div>`;
-          document.querySelectorAll(`[id^="dmmd-${gen}"]`).forEach((n) => n.remove());
-        }
-      }
-    } else if (blocks.length) {
-      blocks.forEach((el) => { el.innerHTML = `<p class="render-error">Mermaid library failed to load.</p>`; });
-    }
-    if (gen === generation) statusEl.textContent = mathReady || !out.querySelector("[data-tex]") ? "Up to date" : "Loading math…";
-  }
-  window.__rerender = render;
-
-  let timer;
-  function schedule() {
-    clearTimeout(timer);
-    statusEl.textContent = "Typing…";
-    timer = setTimeout(() => { render(); store.set(STORE_KEY, src.value); }, 180);
-  }
-
-  /* ---------- Wiring ---------- */
-  /* ---------- Preview selection → highlight in source ---------- */
-  const backdrop = $("backdrop");
-  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  function clearHighlight() { backdrop.textContent = ""; }
-
-  function highlightSource(s, e) {
-    const v = src.value;
-    backdrop.style.paddingRight = `${16 + src.offsetWidth - src.clientWidth}px`; // match textarea scrollbar
-    backdrop.innerHTML = escapeHtml(v.slice(0, s)) + "<mark>" + escapeHtml(v.slice(s, e)) + "</mark>" + escapeHtml(v.slice(e)) + "\n";
-    const mark = backdrop.querySelector("mark");
-    src.scrollTop = Math.max(0, mark.offsetTop - src.clientHeight / 3);
-    backdrop.scrollTop = src.scrollTop;
-  }
-
-  function locateSelection() {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
-    if (!src.offsetParent) return; // editor hidden (Preview view or phone)
-    const r = sel.getRangeAt(0);
-    if (!out.contains(r.commonAncestorContainer)) return;
-
-    const blocks = out.querySelectorAll(".blk");
-    if (!blocks.length) return;
-    const blkOf = (n) => (n.nodeType === 1 ? n : n.parentElement)?.closest(".blk");
-    const a = blkOf(r.startContainer) || blocks[0];
-    const b = blkOf(r.endContainer) || blocks[blocks.length - 1];
-
-    const v = src.value;
-    const starts = [0];
-    for (let i = 0; i < v.length; i++) if (v[i] === "\n") starts.push(i + 1);
-    const from = starts[+a.dataset.ls] ?? 0;
-    const le = +b.dataset.le;
-    const to = le + 1 < starts.length ? starts[le + 1] - 1 : v.length;
-    const region = v.slice(from, to);
-
-    // Match the selected words in order, allowing Markdown syntax (** | ` [ ] etc.) between them.
-    const words = sel.toString().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-    const attempts = [words, words.slice(0, 3), words.slice(-3)].filter((w) => w.length);
-    for (const w of attempts) {
-      const m = new RegExp(w.map(escRe).join("[^\\p{L}\\p{N}]*?"), "iu").exec(region);
-      if (m) return highlightSource(from + m.index, from + m.index + m[0].length);
-    }
-    highlightSource(from, from + region.trimEnd().length); // fall back to the whole block
-  }
-  out.addEventListener("mouseup", () => setTimeout(locateSelection, 0));
-  src.addEventListener("scroll", () => { backdrop.scrollTop = src.scrollTop; });
-
-  src.addEventListener("input", clearHighlight);
-  src.addEventListener("input", schedule);
-  src.addEventListener("keydown", (e) => {
-    if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      e.preventDefault();
-      src.setRangeText("  ", src.selectionStart, src.selectionEnd, "end");
-      schedule();
-    }
-  });
-
-  /* ---------- Diagram size ----------
-     Each diagram starts at "Fit" (its natural size, shrunk to the pane if needed).
-     − / + step in 25% increments of the natural size; the choice survives re-renders. */
-  const zooms = new Map(); // diagram index → scale, absent = fit
-  const ZOOM_STEP = 0.25, ZOOM_MIN = 0.25, ZOOM_MAX = 4;
-
-  function naturalWidth(svg) {
-    const vb = svg.viewBox && svg.viewBox.baseVal;
-    return (vb && vb.width) || svg.getBoundingClientRect().width || 1;
-  }
-
-  function applyZoom(el) {
-    const svg = el.querySelector(".diagram-body svg");
-    if (!svg) return;
-    const natural = naturalWidth(svg);
-    const z = zooms.get(el.dataset.mermaid);
-    if (z === undefined) {
-      svg.style.width = "";
-      svg.style.maxWidth = `min(100%, ${natural}px)`;
-    } else {
-      svg.style.maxWidth = "none";
-      svg.style.width = `${natural * z}px`;
-    }
-    const shown = svg.getBoundingClientRect().width;
-    el.querySelector(".zoom-val").textContent = shown ? `${Math.round((shown / natural) * 100)}%` : "Fit";
-    el.querySelector('[data-zoom="fit"]').setAttribute("aria-pressed", String(z === undefined));
-  }
-
-  out.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-zoom]");
-    if (!btn) return;
-    const el = btn.closest(".diagram");
-    const svg = el.querySelector(".diagram-body svg");
-    const key = el.dataset.mermaid;
-    if (btn.dataset.zoom === "fit") {
-      zooms.delete(key);
-    } else {
-      const cur = zooms.get(key) ?? svg.getBoundingClientRect().width / naturalWidth(svg);
-      const next = btn.dataset.zoom === "in"
-        ? Math.floor(cur / ZOOM_STEP + 1e-6) * ZOOM_STEP + ZOOM_STEP
-        : Math.ceil(cur / ZOOM_STEP - 1e-6) * ZOOM_STEP - ZOOM_STEP;
-      zooms.set(key, Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next)));
-    }
-    applyZoom(el);
-  });
-
-  /* ---------- Full-screen diagram viewer ----------
-     Shows a copy of the diagram in a modal. Wheel / pinch zooms around the pointer,
-     dragging pans. The SVG is resized (not CSS-scaled) so text stays crisp at any zoom. */
-  const EXPAND_ICON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>`;
-  const fs = $("fs"), stage = $("fs-stage"), canvas = $("fs-canvas"), fsVal = $("fs-val");
-  const FS_MIN = 0.1, FS_MAX = 12, FS_STEP = 1.25;
-  const viewer = { key: null, w: 1, h: 1, s: 1, x: 0, y: 0 };
-  const clampScale = (s) => Math.min(FS_MAX, Math.max(FS_MIN, s));
-
-  function paintViewer() {
-    const svg = canvas.firstElementChild;
-    if (!svg) return;
-    svg.style.width = `${viewer.w * viewer.s}px`;
-    svg.style.height = `${viewer.h * viewer.s}px`;
-    canvas.style.transform = `translate(${viewer.x}px, ${viewer.y}px)`;
-    fsVal.textContent = `${Math.round(viewer.s * 100)}%`;
-  }
-
-  // Zoom by `factor`, keeping the stage point (cx, cy) fixed on screen.
-  function zoomViewer(factor, cx = stage.clientWidth / 2, cy = stage.clientHeight / 2) {
-    const s = clampScale(viewer.s * factor);
-    const k = s / viewer.s;
-    viewer.x = cx - (cx - viewer.x) * k;
-    viewer.y = cy - (cy - viewer.y) * k;
-    viewer.s = s;
-    paintViewer();
-  }
-
-  function centerViewer(s) {
-    viewer.s = clampScale(s);
-    viewer.x = (stage.clientWidth - viewer.w * viewer.s) / 2;
-    viewer.y = (stage.clientHeight - viewer.h * viewer.s) / 2;
-    paintViewer();
-  }
-  const fitViewer = () => centerViewer(Math.min(
-    (stage.clientWidth - 48) / viewer.w, (stage.clientHeight - 48) / viewer.h, 4));
-
-  function refreshViewer(el) {
-    const svg = el.querySelector(".diagram-body svg");
-    if (!svg) return false;
-    const vb = svg.viewBox && svg.viewBox.baseVal;
-    const box = svg.getBoundingClientRect();
-    viewer.w = (vb && vb.width) || box.width || 1;
-    viewer.h = (vb && vb.height) || box.height || 1;
-    // Mermaid prefixes every internal id (markers, scoped styles) with the root id;
-    // rename them so the copy doesn't depend on the original in the preview.
-    const tpl = document.createElement("template");
-    tpl.innerHTML = svg.id ? svg.outerHTML.split(svg.id).join(`${svg.id}-fs`) : svg.outerHTML;
-    canvas.replaceChildren(tpl.content);
-    paintViewer();
-    return true;
-  }
-
-  function openViewer(el) {
-    if (!refreshViewer(el)) return;
-    viewer.key = el.dataset.mermaid;
-    fs.showModal();
-    stage.focus();
-    fitViewer();
-  }
-
-  fs.addEventListener("close", () => { viewer.key = null; canvas.replaceChildren(); });
-  out.addEventListener("click", (e) => {
-    const btn = e.target.closest(".fs-open");
-    if (btn) openViewer(btn.closest(".diagram"));
-  });
-
-  fs.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-fs]");
-    if (!btn) return;
-    const a = btn.dataset.fs;
-    if (a === "in") zoomViewer(FS_STEP);
-    else if (a === "out") zoomViewer(1 / FS_STEP);
-    else if (a === "fit") fitViewer();
-    else if (a === "one") centerViewer(1);
-    else if (a === "close") fs.close();
-  });
-
-  fs.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const pan = { ArrowLeft: [60, 0], ArrowRight: [-60, 0], ArrowUp: [0, 60], ArrowDown: [0, -60] }[e.key];
-    if (pan) { viewer.x += pan[0]; viewer.y += pan[1]; paintViewer(); }
-    else if (e.key === "+" || e.key === "=") zoomViewer(FS_STEP);
-    else if (e.key === "-" || e.key === "_") zoomViewer(1 / FS_STEP);
-    else if (e.key === "0") fitViewer();
-    else if (e.key === "1") centerViewer(1);
-    else return;
-    e.preventDefault();
-  });
-
-  const stagePoint = (e) => {
-    const r = stage.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  };
-
-  stage.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    const p = stagePoint(e);
-    const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? stage.clientHeight : 1);
-    // ctrlKey is set for trackpad pinch, which sends small deltas → zoom faster.
-    zoomViewer(Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y);
-  }, { passive: false });
-
-  stage.addEventListener("dblclick", (e) => {
-    const p = stagePoint(e);
-    zoomViewer(e.shiftKey ? 0.5 : 2, p.x, p.y);
-  });
-
-  // One pointer drags; two pointers pinch-zoom around their midpoint (and pan with it).
-  const pointers = new Map();
-  let gesture = null;
-  function readGesture() {
-    const p = [...pointers.values()];
-    if (!p.length) return null;
-    const cx = p.reduce((t, q) => t + q.x, 0) / p.length;
-    const cy = p.reduce((t, q) => t + q.y, 0) / p.length;
-    const d = p.length > 1 ? Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) : 0;
-    return { cx, cy, d };
-  }
-  let press = null; // a tap/click on a diagram link follows it; a drag that starts on one doesn't
-  stage.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    const link = e.target.closest("a[href]");
-    press = pointers.size ? null : link && { link, x: e.clientX, y: e.clientY };
-    stage.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, stagePoint(e));
-    gesture = readGesture();
-    stage.classList.add("panning");
-  });
-  stage.addEventListener("pointermove", (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, stagePoint(e));
-    const g = readGesture();
-    viewer.x += g.cx - gesture.cx;
-    viewer.y += g.cy - gesture.cy;
-    if (g.d && gesture.d) zoomViewer(g.d / gesture.d, g.cx, g.cy);
-    else paintViewer();
-    gesture = g;
-  });
-  const endPointer = (e) => {
-    pointers.delete(e.pointerId);
-    gesture = readGesture();
-    if (!pointers.size) stage.classList.remove("panning");
-  };
-  stage.addEventListener("pointerup", (e) => {
-    const tap = press && Math.hypot(e.clientX - press.x, e.clientY - press.y) < 5;
-    const href = tap && press.link.getAttribute("href");
-    press = null;
-    endPointer(e);
-    if (href) followLink(href);
-  });
-  stage.addEventListener("pointercancel", (e) => { press = null; endPointer(e); });
-  // Links in the viewer are followed from pointerup above; stop the native click so a drag
-  // that ends over a link doesn't navigate. Keyboard activation (detail 0) still works.
-  fs.addEventListener("click", (e) => {
-    const a = e.target.closest(".fs-canvas a[href]");
-    if (!a) return;
-    e.preventDefault();
-    if (e.detail === 0) followLink(a.getAttribute("href"));
-  });
-
-  /* ---------- Links ----------
-     "#…" scrolls the preview to that heading/anchor; anything else opens in a new tab.
-     Covers Markdown links (target set by the DOMPurify hook) and Mermaid's
-     `click Node href "url"` links, which Mermaid renders as <a> elements in the SVG. */
-  function safeHref(href) {
-    if (href.startsWith("#")) return href;
-    try {
-      const u = new URL(href, location.href);
-      return /^(https?|mailto|tel):$/.test(u.protocol) || u.protocol === location.protocol ? u.href : null;
-    } catch { return null; }
-  }
-
-  function followLink(href) {
-    if (!href.startsWith("#")) { window.open(href, "_blank", "noopener"); return; }
-    if (fs.open) fs.close();
-    let id = href.slice(1);
-    try { id = decodeURIComponent(id); } catch {}
-    const target = !id ? null : document.getElementById(`user-content-${id}`) ||
-      out.querySelector(`[id="${CSS.escape(id)}"], a[name="${CSS.escape(id)}"]`);
-    const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-    if (!id) $("scroll").scrollTo({ top: 0, behavior });
-    else if (target && out.contains(target)) target.scrollIntoView({ behavior, block: "start" });
-  }
-
-  function linkDiagram(el) {
-    el.querySelectorAll(".diagram-body svg a").forEach((a) => {
-      const href = safeHref(a.getAttribute("href") || a.getAttribute("xlink:href") || "");
-      a.removeAttribute("xlink:href");
-      if (!href) { a.removeAttribute("href"); return; }
-      a.setAttribute("href", href);
-      if (!href.startsWith("#")) {
-        a.setAttribute("target", "_blank");
-        a.setAttribute("rel", "noopener noreferrer");
-      }
-    });
-  }
-
-  out.addEventListener("click", (e) => {
-    const a = e.target.closest('a[href^="#"]');
-    if (!a) return;
-    e.preventDefault();
-    followLink(a.getAttribute("href"));
-  });
-
-  out.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".copy");
-    if (!btn) return;
-    const code = btn.closest(".codeblock").querySelector("code").innerText;
-    try { await navigator.clipboard.writeText(code); btn.textContent = "Copied"; }
-    catch { btn.textContent = "Copy blocked"; }
-    setTimeout(() => (btn.textContent = "Copy"), 1400);
-  });
-
-  function setView(v) {
-    main.dataset.view = v;
-    document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
-    store.set(VIEW_KEY, v);
-  }
-  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
-
-  // Editing commands (and their undo history) only work on a focused textarea. In Preview
-  // view the editor is display:none, so lay it out off-screen for the duration of `fn`.
-  function withEditor(fn) {
-    const pane = src.closest(".pane-editor");
-    const hidden = !src.offsetParent;
-    const prev = document.activeElement;
-    if (hidden) pane.classList.add("ghost");
-    try {
-      src.focus({ preventScroll: true });
-      return document.activeElement === src ? fn() : false;
-    } finally {
-      if (hidden) {
-        pane.classList.remove("ghost");
-        if (prev && prev !== src && prev !== document.body) prev.focus({ preventScroll: true });
-        else src.blur();
-      }
-    }
-  }
-
-  // Replace the editor's text as an edit (not by assigning .value), so Ctrl+Z can undo it.
-  function replaceAll(t) {
-    const ok = withEditor(() => {
-      src.select();
-      return t ? document.execCommand("insertText", false, t) : (src.value === "" || document.execCommand("delete"));
-    });
-    if (!ok) src.value = t;
-    src.setSelectionRange(0, 0);
-    src.scrollTop = 0;
-  }
-
-  // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) outside the editor — e.g. in Preview view or the diagram
-  // viewer — still undo/redo the document.
-  document.addEventListener("keydown", (e) => {
-    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-    const k = e.key.toLowerCase();
-    const cmd = k === "z" ? (e.shiftKey ? "redo" : "undo") : k === "y" && !e.shiftKey ? "redo" : null;
-    if (!cmd || e.target === src || e.target.closest?.("input, textarea, [contenteditable]")) return;
-    e.preventDefault();
-    if (fs.open) fs.close(); // the modal makes the editor inert, so it couldn't take focus
-    withEditor(() => document.execCommand(cmd)); // fires "input" → re-render + save
-  });
-  function loadText(t) { replaceAll(t); clearHighlight(); render(); store.set(STORE_KEY, t); }
-  $("sample").addEventListener("click", () => loadText($("sample-md").textContent.trim() + "\n"));
-  $("clear").addEventListener("click", () => loadText(""));
-  $("file").addEventListener("change", async (e) => {
-    const f = e.target.files[0];
-    if (f) loadText(await f.text());
-    e.target.value = "";
-  });
-
-  // PDF: re-render diagrams in light colours, then open the print dialog ("Save as PDF").
-  $("pdf").addEventListener("click", async () => {
-    clearTimeout(timer);
-    printing = true;
-    await render();
-    const prevTitle = document.title;
-    const h1 = out.querySelector("h1");
-    if (h1) document.title = h1.textContent.trim();
-    statusEl.textContent = "Choose “Save as PDF”";
-    try { window.print(); }
-    catch { statusEl.textContent = "Printing is blocked here — open index.html directly"; }
-    document.title = prevTitle;
-    printing = false;
-    render();
-  });
-
-  document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("dropping"); });
-  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) document.body.classList.remove("dropping"); });
-  document.addEventListener("drop", async (e) => {
-    e.preventDefault();
-    document.body.classList.remove("dropping");
-    const f = e.dataTransfer.files[0];
-    if (f) loadText(await f.text());
-  });
-
-  // Re-render diagrams when the theme flips
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
-  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
-  /* ---------- Boot ---------- */
-  const savedView = store.get(VIEW_KEY);
-  if (savedView) setView(savedView);
-  const draft = store.get(STORE_KEY);
-  src.value = draft && draft.trim() ? draft : $("sample-md").textContent.trim() + "\n";
-  render();
-})();
-</script>
+<footer>
+  <div class="wrap"><div class="foot">
+    <span>Folio</span>
+    <a href="https://github.com/sachinmehan3/folio-markdown">Source on GitHub</a>
+  </div></div>
+</footer>
