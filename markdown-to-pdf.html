@@ -895,7 +895,11 @@ sequenceDiagram
         fontFamily: "Schibsted Grotesk, system-ui, sans-serif"
       });
       for (const el of blocks) {
-        const code = mermaidQueue[+el.getAttribute("data-mermaid")];
+        // Mermaid parses labels as Markdown, so "[1. Step]" or "[- item]" becomes a list
+        // and renders as "Unsupported markdown: list". Escape the marker as a Mermaid entity.
+        const code = mermaidQueue[+el.getAttribute("data-mermaid")]
+          .replace(/([\[({|>"\/\\]\s*)(?:(\d+)\.|([-*+]))(?=\s)/g,
+            (_, open, num, bullet) => open + (num ? `${num}#46;` : `#${bullet.charCodeAt(0)};`));
         try {
           const { svg } = await mermaid.render(`mmd-${gen}-${el.getAttribute("data-mermaid")}`, code);
           if (gen !== generation) return;
