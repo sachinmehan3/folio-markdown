@@ -184,7 +184,9 @@
   main[data-view="preview"] { grid-template-columns: 1fr; }
   main[data-view="preview"] .pane-editor { display: none; }
 
-  .pane { min-height: 0; display: flex; flex-direction: column; }
+  /* Pane heads are "shy": they float over the top of each pane, slide away while you
+     scroll down and come back as soon as you scroll up (see the head-shy toggle in JS). */
+  .pane { --head-h: 34px; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden; }
   .pane-editor { border-right: 1px solid var(--rule); background: var(--editor); }
   /* Hidden editor briefly laid out off-screen so it can take focus (see withEditor). */
   main .pane-editor.ghost {
@@ -198,11 +200,17 @@
     pointer-events: none;
   }
   .pane-head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    min-height: 34px;
+    height: var(--head-h);
+    transition: transform .22s ease;
     padding: 0 20px;
     font-size: 12px;
     color: var(--muted);
@@ -212,6 +220,7 @@
     white-space: nowrap;
   }
   .pane-head > :first-child { color: var(--ink); font-weight: 600; }
+  main.head-shy .pane-head { transform: translateY(-100%); }
   .editor-wrap { flex: 1; min-height: 0; position: relative; background: var(--editor); }
   textarea, .backdrop {
     margin: 0;
@@ -226,6 +235,7 @@
     white-space: pre-wrap;
     overflow-wrap: break-word;
   }
+  textarea, .backdrop { padding-top: calc(24px + var(--head-h)); }
   textarea {
     position: relative;
     display: block;
@@ -253,7 +263,12 @@
   }
   textarea:focus-visible { outline: 0; }
   .pane-preview { background: var(--desk); }
-  .scroll { flex: 1; overflow: auto; padding: 28px 24px 72px; }
+  .scroll {
+    flex: 1;
+    overflow: auto;
+    padding: calc(28px + var(--head-h)) 24px 72px;
+    scroll-padding-top: var(--head-h);
+  }
   textarea, .scroll { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
   .dropping textarea { box-shadow: inset 0 0 0 2px var(--accent); }
 
@@ -463,9 +478,9 @@
     .tools { margin-left: 0; width: 100%; padding-top: 0; }
     .tools .sep { display: none; }
     .tools .primary { margin-left: auto; }
-    .scroll { padding: 0; }
+    .scroll { padding: var(--head-h) 0 0; }
     .doc { font-size: 16.5px; border: 0; box-shadow: none; padding: 24px 16px 56px; }
-    textarea, .backdrop { padding: 16px; }
+    textarea, .backdrop { padding: calc(16px + var(--head-h)) 16px 16px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
@@ -1254,7 +1269,22 @@ sequenceDiagram
     setTimeout(() => (btn.textContent = "Copy"), 1400);
   });
 
+  /* Shy pane heads: hide while scrolling down, reveal on scroll up or near the top.
+     Both panes toggle together so the two heads stay aligned in split view. */
+  const showHead = () => main.classList.remove("head-shy");
+  [src, $("scroll")].forEach((el) => {
+    let last = el.scrollTop;
+    el.addEventListener("scroll", () => {
+      const y = el.scrollTop, d = y - last;
+      if (y <= 34) showHead();
+      else if (d > 4) main.classList.add("head-shy");
+      else if (d < -4) showHead();
+      if (Math.abs(d) > 4 || y <= 34) last = y;
+    }, { passive: true });
+  });
+
   function setView(v) {
+    showHead();
     main.dataset.view = v;
     document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
     store.set(VIEW_KEY, v);
@@ -1320,6 +1350,7 @@ sequenceDiagram
     const h1 = out.querySelector("h1");
     if (h1) document.title = h1.textContent.trim();
     statusEl.textContent = "Choose “Save as PDF”";
+    showHead();
     try { window.print(); }
     catch { statusEl.textContent = "Printing is blocked here — open index.html directly"; }
     document.title = prevTitle;
