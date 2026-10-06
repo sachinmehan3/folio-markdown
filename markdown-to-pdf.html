@@ -210,7 +210,7 @@
     align-items: center;
     gap: 12px;
     height: var(--head-h);
-    transition: transform .22s ease;
+    transition: transform .3s cubic-bezier(.2, .7, .2, 1);
     padding: 0 20px;
     font-size: 12px;
     color: var(--muted);
@@ -1269,17 +1269,21 @@ sequenceDiagram
     setTimeout(() => (btn.textContent = "Copy"), 1400);
   });
 
-  /* Shy pane heads: hide while scrolling down, reveal on scroll up or near the top.
+  /* Shy pane heads: hide soon after scrolling down, but only come back after a deliberate
+     scroll up (HEAD_UP px of travel since the last change of direction) or near the top.
      Both panes toggle together so the two heads stay aligned in split view. */
+  const HEAD_DOWN = 10, HEAD_UP = 100;
   const showHead = () => main.classList.remove("head-shy");
   [src, $("scroll")].forEach((el) => {
-    let last = el.scrollTop;
+    let last = el.scrollTop, travel = 0; // travel: signed distance in the current direction
     el.addEventListener("scroll", () => {
       const y = el.scrollTop, d = y - last;
+      last = y;
+      if (!d) return;
+      travel = Math.sign(d) === Math.sign(travel) ? travel + d : d;
       if (y <= 34) showHead();
-      else if (d > 4) main.classList.add("head-shy");
-      else if (d < -4) showHead();
-      if (Math.abs(d) > 4 || y <= 34) last = y;
+      else if (travel > HEAD_DOWN) main.classList.add("head-shy");
+      else if (travel < -HEAD_UP) showHead();
     }, { passive: true });
   });
 
