@@ -24,6 +24,7 @@ A live Markdown renderer with syntax-highlighted code, Mermaid diagrams and TeX 
 - **Math:** `$inline$`, `$$display$$`, `\(…\)`, `\[…\]`, or a `math` code block
 - **Diagrams:** Interactive `mermaid` code blocks with zoom (− / + / Fit / 100%) and full-screen viewer
 - **File handling:** Open or drag in a `.md` file; drafts auto-save to browser local storage
+- **Contents:** A floating outline lists every heading; click one to jump there, and the current section stays marked as you scroll
 - **Views:** Switch seamlessly between Write, Split, and Preview modes
 - **Export PDF:** Opens the print dialog formatted cleanly for "Save as PDF"
 

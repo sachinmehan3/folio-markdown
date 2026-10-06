@@ -270,6 +270,80 @@
     scroll-padding-top: var(--head-h);
   }
   textarea, .scroll { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
+
+  /* Outline: a floating card over the preview. Collapsed it is just the list icon. */
+  .toc {
+    position: absolute;
+    top: calc(var(--head-h) + 12px);
+    right: 14px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: calc(100% - 28px);
+    max-height: calc(100% - var(--head-h) - 24px);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.2);
+    transition: top .3s cubic-bezier(.2, .7, .2, 1), max-height .3s cubic-bezier(.2, .7, .2, 1);
+  }
+  main.head-shy .toc { top: 12px; max-height: calc(100% - 24px); }
+  .toc.open { width: 252px; }
+  .toc-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px;
+    border: 0;
+    border-radius: 13px;
+    color: var(--muted);
+    font: 600 11px/1 var(--ui);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .toc-btn:hover { color: var(--ink); }
+  .toc-btn svg { width: 16px; height: 16px; flex: none; }
+  .toc-btn span { display: none; }
+  .toc.open .toc-btn { padding: 12px 14px 8px; background: none; }
+  .toc.open .toc-btn span { display: inline; }
+  .toc-list {
+    display: none;
+    position: relative;
+    min-height: 0;
+    margin: 0;
+    padding: 0 6px 8px;
+    list-style: none;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+  }
+  .toc.open .toc-list { display: block; }
+  .toc-list a {
+    position: relative;
+    display: block;
+    padding: 5px 8px 5px calc(10px + var(--lvl, 0) * 12px);
+    border-radius: 8px;
+    font: 13px/1.35 var(--ui);
+    color: var(--muted);
+    text-decoration: none;
+    transition: background-color 120ms, color 120ms;
+  }
+  .toc-list a:hover { background: var(--hover); color: var(--ink); }
+  .toc-list a:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .toc-list a[aria-current] { color: var(--ink); font-weight: 500; }
+  .toc-list a[aria-current]::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 7px;
+    bottom: 7px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
   .dropping textarea { box-shadow: inset 0 0 0 2px var(--accent); }
 
   /* ---------- Rendered document: a sheet on the desk ---------- */
@@ -496,7 +570,7 @@
       color-scheme: light;
     }
     html, body { height: auto; display: block; background: #ffffff; }
-    .bar, .pane-editor, .pane-head, .codeblock-head button { display: none !important; }
+    .bar, .pane-editor, .pane-head, .toc, .codeblock-head button { display: none !important; }
     main, main[data-view] { display: block; }
     main .pane-preview { display: block !important; }
     .scroll { overflow: visible; padding: 0; }
@@ -540,6 +614,12 @@
   <section class="pane pane-preview" aria-label="Rendered preview">
     <div class="pane-head"><span>Preview</span><span id="status">Ready</span></div>
     <div class="scroll" id="scroll"><article class="doc" id="out"></article></div>
+    <nav class="toc" id="toc" aria-label="Contents" hidden>
+      <button type="button" class="toc-btn" id="toc-btn" aria-expanded="false" aria-controls="toc-list" title="Contents">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h0M2.5 8h0M2.5 12h0"/></svg><span>Contents</span>
+      </button>
+      <ol class="toc-list" id="toc-list"></ol>
+    </nav>
   </section>
 </main>
 
@@ -897,6 +977,7 @@ sequenceDiagram
         el.innerHTML = `<span class="render-error">TeX error: ${escapeHtml(e.message)}</span>`;
       }
     });
+    buildOutline();
 
     // Mermaid
     const blocks = [...out.querySelectorAll("[data-mermaid]")];
@@ -1268,6 +1349,104 @@ sequenceDiagram
     catch { btn.textContent = "Copy blocked"; }
     setTimeout(() => (btn.textContent = "Copy"), 1400);
   });
+
+  /* ---------- Outline ----------
+     Floating card over the preview that lists the document's headings. Clicking one
+     scrolls to it; the section at the top of the preview is marked as you scroll. */
+  const toc = $("toc"), tocBtn = $("toc-btn"), tocList = $("toc-list"), scroller = $("scroll");
+  const TOC_KEY = "folio-md-toc";
+  let tocHeads = [], tocActive = -1, tocPinned = -1; // pinned: heading picked from the list
+
+  // Heading text with any math shown as its TeX source rather than the rendered SVG.
+  function headingText(h) {
+    const c = h.cloneNode(true);
+    c.querySelectorAll("[data-tex]").forEach((m) => m.replaceWith(m.dataset.tex));
+    return c.textContent.replace(/\s+/g, " ").trim();
+  }
+
+  const tocCovers = () => toc.getBoundingClientRect().left < out.getBoundingClientRect().right;
+
+  function setToc(open) {
+    toc.classList.toggle("open", open);
+    tocBtn.setAttribute("aria-expanded", String(open));
+    if (open) markActive(true);
+  }
+
+  function buildOutline() {
+    tocHeads = [...out.querySelectorAll("h1, h2, h3, h4")].filter((h) => h.id && headingText(h));
+    toc.hidden = !tocHeads.length;
+    const top = Math.min(...tocHeads.map((h) => +h.tagName[1]));
+    tocList.replaceChildren(...tocHeads.map((h, i) => {
+      const a = document.createElement("a");
+      a.setAttribute("href", "#" + h.id.replace(/^user-content-/, ""));
+      a.textContent = headingText(h);
+      a.dataset.i = i;
+      a.style.setProperty("--lvl", +h.tagName[1] - top);
+      const li = document.createElement("li");
+      li.append(a);
+      return li;
+    }));
+    tocActive = tocPinned = -1;
+    // First time there are headings: open unless the user chose before, or there's no room.
+    if (tocHeads.length && !toc.dataset.ready) {
+      toc.dataset.ready = "1";
+      const saved = store.get(TOC_KEY);
+      setToc(saved !== "0");
+      if (!saved && tocCovers()) setToc(false);
+    }
+    markActive(true);
+  }
+
+  function markActive(force) {
+    let i = tocPinned;
+    if (i < 0) {
+      const line = scroller.getBoundingClientRect().top + (parseFloat(getComputedStyle(scroller).scrollPaddingTop) || 0) + 24;
+      tocHeads.forEach((h, k) => { if (h.getBoundingClientRect().top <= line) i = k; });
+    }
+    if (i === tocActive && !force) return;
+    tocActive = i;
+    tocList.querySelectorAll("a").forEach((a, k) => {
+      if (k === i) a.setAttribute("aria-current", "location");
+      else a.removeAttribute("aria-current");
+    });
+    // Keep the marked entry visible in a long list (without scrolling anything else).
+    const a = tocList.children[i]?.firstElementChild;
+    if (!a || !toc.classList.contains("open")) return;
+    const y0 = a.offsetTop, y1 = y0 + a.offsetHeight;
+    if (y0 < tocList.scrollTop) tocList.scrollTop = y0 - 6;
+    else if (y1 > tocList.scrollTop + tocList.clientHeight) tocList.scrollTop = y1 - tocList.clientHeight + 6;
+  }
+
+  tocBtn.addEventListener("click", () => {
+    const open = !toc.classList.contains("open");
+    setToc(open);
+    store.set(TOC_KEY, open ? "1" : "0");
+  });
+  tocList.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a) return;
+    e.preventDefault();
+    followLink(a.getAttribute("href"));
+    tocPinned = +a.dataset.i;
+    markActive(true);
+    // On a narrow pane the card sits over the text: get out of the way once a section is picked.
+    if (tocCovers()) { setToc(false); tocBtn.focus({ preventScroll: true }); }
+  });
+  toc.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && toc.classList.contains("open")) { setToc(false); tocBtn.focus(); }
+  });
+
+  let spyQueued = false;
+  scroller.addEventListener("scroll", () => {
+    if (spyQueued) return;
+    spyQueued = true;
+    requestAnimationFrame(() => { spyQueued = false; markActive(); });
+  }, { passive: true });
+  // A heading near the end can't reach the top, so a picked entry stays marked until the
+  // user scrolls by hand.
+  const unpin = () => { tocPinned = -1; };
+  ["wheel", "touchstart", "pointerdown"].forEach((t) => scroller.addEventListener(t, unpin, { passive: true }));
+  document.addEventListener("keydown", unpin);
 
   /* Shy pane heads: hide soon after scrolling down, but only come back after a deliberate
      scroll up (HEAD_UP px of travel since the last change of direction) or near the top.
